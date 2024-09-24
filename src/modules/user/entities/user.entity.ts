@@ -1,28 +1,36 @@
 import { Role } from '@/common/enums';
 import { ApiProperty } from '@nestjs/swagger';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
+import { Account } from '@/modules/account/entities/account.entity';
 
 @Entity()
 export class User {
   @ApiProperty()
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  us_id: string;
 
   @Column()
   @ApiProperty()
-  name: string;
+  us_name: string;
 
   @Column({ unique: true })
   @ApiProperty()
-  email: string;
+  us_email: string;
 
   @Column()
   @ApiProperty()
-  password: string;
+  us_password: string;
 
   @Column({ default: false })
   @ApiProperty()
-  isAuthenticated: boolean;
+  us_isAuthenticated: boolean;
 
   @Column({
     type: 'enum',
@@ -31,5 +39,17 @@ export class User {
     default: [Role.User],
   })
   @ApiProperty({ isArray: true })
-  roles: Role[];
+  us_roles: Role[];
+
+  @OneToMany(() => Account, (account) => account.user)
+  @ApiProperty({ type: () => [Account] })
+  accounts: Account[];
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  @ApiProperty()
+  ac_createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamptz' })
+  @ApiProperty()
+  ac_updatedAt: Date;
 }

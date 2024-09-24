@@ -5,25 +5,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { AuthService } from './auth.service';
-// import { IS_PUBLIC_KEY } from './public.decorator';
+import { Request } from 'express';
 
+import { AuthService } from './auth.service';
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(protected readonly authService: AuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-    //   context.getHandler(),
-    //   context.getClass(),
-    // ]);
-
-    // if (isPublic) {
-    //   return true;
-    // }
-
     const request = context.switchToHttp().getRequest();
-    const token = request.cookies['auth_token'];
+    const token =
+      request.cookies['access_token'] || this.extractTokenFromHeader(request);
 
     if (!token) {
       throw new UnauthorizedException('Token missing or invalid');
@@ -37,5 +29,9 @@ export class AuthGuard implements CanActivate {
 
     request.user = user;
     return true;
+  }
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
   }
 }

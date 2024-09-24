@@ -16,12 +16,12 @@ import { UsersService } from './user.service';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 
+import { Role } from '@/common/enums';
 import { Roles } from '@/modules/auth/roles.decorator';
 
 import { RolesGuard } from '@/modules/auth/roles.guard';
 import { AuthGuard } from '@/modules/auth/auth.guard';
 
-import { Role } from '@/common/enums';
 @ApiTags('Users')
 @Controller('users')
 @UseGuards(AuthGuard, RolesGuard)

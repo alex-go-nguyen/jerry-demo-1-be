@@ -13,7 +13,7 @@ export const exceptionCase = {
     errorCode: ErrorCode.EMAIL_NO_AUTHENTICATED,
   },
   [ErrorCode.INCORRECT_PASSWORD]: {
-    status: HttpStatus.UNAUTHORIZED,
+    status: HttpStatus.BAD_REQUEST,
     message: 'Incorrect password!',
     errorCode: ErrorCode.INCORRECT_PASSWORD,
   },

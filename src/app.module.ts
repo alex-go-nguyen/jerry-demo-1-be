@@ -9,9 +9,11 @@ import { DatabaseModule } from '@/database/database.module';
 
 import { AuthModule } from '@/modules/auth/auth.module';
 import { UsersModule } from '@/modules/user/user.module';
+import { AccountModule } from '@/modules/account/account.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { AppService } from './app.service';
     DatabaseModule,
     AuthModule,
     UsersModule,
+    AccountModule,
   ],
   controllers: [AppController],
   providers: [AppService],

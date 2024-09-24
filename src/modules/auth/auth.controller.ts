@@ -8,6 +8,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 
 import { Response } from 'express';
@@ -97,18 +98,31 @@ export class AuthController {
   async login(
     @Body() userData: LoginUserDto,
     @Res({ passthrough: true }) response: Response,
+    @Req() request: Request,
   ) {
     try {
-      const token = await this.authService.loginService(userData);
+      const resultData = await this.authService.loginService(userData);
+      const referer = request.headers['origin'];
+      if (referer && referer.startsWith('chrome-extension://')) {
+        response.status(HttpStatus.OK).json({
+          ...handleDataResponse('Login successfully!'),
+          ...resultData,
+        });
+        return;
+      }
+
       response
-        .cookie('access_token', token, {
+        .cookie('access_token', resultData.token, {
           path: '/',
           expires: new Date(Date.now() + 1000 * 60 * 60),
           httpOnly: true,
           sameSite: 'lax',
         })
         .status(HttpStatus.OK)
-        .json(handleDataResponse('Login successfully!'));
+        .json({
+          ...handleDataResponse('Login successfully!'),
+          currentUser: { ...resultData.currentUser },
+        });
     } catch (error) {
       if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
         throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);

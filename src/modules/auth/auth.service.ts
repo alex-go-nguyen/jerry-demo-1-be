@@ -52,7 +52,7 @@ export class AuthService {
     }
 
     const existedUser = await this.userRepository.findOne({
-      where: { email: userData.email },
+      where: { us_email: userData.email },
     });
 
     if (existedUser) {
@@ -62,16 +62,17 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     const newUser = this.userRepository.create({
-      ...userData,
-      password: hashedPassword,
+      us_name: userData.name,
+      us_email: userData.email,
+      us_password: hashedPassword,
     });
 
     const saveUser = await this.userRepository.save(newUser);
 
-    const url = `${this.configService.get<string>('CLIENT_URL')}/auth/confirm-email/${saveUser.id}`;
+    const url = `${this.configService.get<string>('WEB_CLIENT_URL')}/auth/confirm-email/${saveUser.us_id}`;
 
     await this.mailerService.sendMail({
-      to: saveUser.email,
+      to: saveUser.us_email,
       from: 'Anh bao',
       subject: 'Verify email',
       template: 'verification_email',
@@ -86,10 +87,10 @@ export class AuthService {
       throw new Error(ErrorCode.MISSING_INPUT);
     }
     const existedUser = await this.userRepository.findOne({
-      where: { id: confirmData.id },
+      where: { us_id: confirmData.id },
     });
     if (existedUser) {
-      existedUser.isAuthenticated = true;
+      existedUser.us_isAuthenticated = true;
       await this.userRepository.save(existedUser);
     } else {
       throw new Error(ErrorCode.EMAIL_ALREADY_REGISTERED);
@@ -98,37 +99,44 @@ export class AuthService {
 
   async loginService(userData: LoginUserDto) {
     const existedUser = await this.userRepository.findOne({
-      where: { email: userData.email },
+      where: { us_email: userData.email },
     });
     if (!existedUser) {
       throw new Error(ErrorCode.USER_NOT_FOUND);
     }
     if (existedUser) {
-      if (!existedUser.isAuthenticated) {
+      if (!existedUser.us_isAuthenticated) {
         throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
       }
       const isCorrectPassword = bcrypt.compareSync(
         userData.password,
-        existedUser.password,
+        existedUser.us_password,
       );
       if (!isCorrectPassword) {
         throw new Error(ErrorCode.INCORRECT_PASSWORD);
       }
       const token = await this.generateToken(existedUser);
-      return token;
+      return {
+        token,
+        currentUser: {
+          us_id: existedUser.us_id,
+          us_name: existedUser.us_name,
+          us_email: existedUser.us_email,
+        },
+      };
     }
   }
 
   async forgotPasswordService(forgotPasswordData: ForgotPasswordDto) {
     const existedUser = await this.userRepository.findOne({
-      where: { email: forgotPasswordData.email },
+      where: { us_email: forgotPasswordData.email },
     });
 
     if (!existedUser) {
       throw new Error(ErrorCode.USER_NOT_FOUND);
     }
 
-    if (!existedUser.isAuthenticated) {
+    if (!existedUser.us_isAuthenticated) {
       throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
     }
     const verificationToken = Math.floor(
@@ -158,22 +166,28 @@ export class AuthService {
 
   async resetPasswordService(userData: LoginUserDto) {
     const existedUser = await this.userRepository.findOne({
-      where: { email: userData.email },
+      where: { us_email: userData.email },
     });
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-    existedUser.password = hashedPassword;
+    existedUser.us_password = hashedPassword;
 
     await this.userRepository.save(existedUser);
   }
+
   async verifyToken(token: string) {
     return await this.jwtService.verifyAsync(token, {
       secret: this.configService.get<string>('JWT_SECRET'),
     });
   }
+
   async generateToken(user: User): Promise<string> {
-    const payload = { userName: user.name, userId: user.id, roles: user.roles };
+    const payload = {
+      us_name: user.us_name,
+      us_id: user.us_id,
+      us_roles: user.us_roles,
+    };
     return this.jwtService.signAsync(payload);
   }
 }
