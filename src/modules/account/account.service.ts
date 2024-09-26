@@ -34,20 +34,20 @@ export class AccountService {
 
     const newAccount = this.accountRepository.create({
       user: user.us_id,
-      ac_domain: createAccountData.domain,
-      ac_username: createAccountData.username,
-      ac_password: encryptedPassword,
+      domain: createAccountData.domain,
+      username: createAccountData.username,
+      password: encryptedPassword,
     });
 
     const savedAccount = await this.accountRepository.save(newAccount);
     return savedAccount;
   }
-  async getAccountsByUserId(us_id: string): Promise<Account[]> {
+  async getAccountsByUserId(userId: string): Promise<Account[]> {
     const listAccounts = await this.accountRepository.find({
-      where: { user: { us_id } },
+      where: { user: { id: userId } },
       relations: ['user'],
       select: {
-        user: { us_id: true },
+        user: { id: true },
       },
     });
     return listAccounts;

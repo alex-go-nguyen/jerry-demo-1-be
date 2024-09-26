@@ -13,7 +13,6 @@ export class EncryptionService {
   }
 
   encryptPassword(password: string): string {
-    console.log('first', password);
     const encrypted = CryptoJS.AES.encrypt(
       password,
       CryptoJS.enc.Utf8.parse(this.key),

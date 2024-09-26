@@ -22,6 +22,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { handleDataResponse } from '@/utils';
@@ -112,9 +113,9 @@ export class AuthController {
       }
 
       response
-        .cookie('access_token', resultData.token, {
+        .cookie('access_token', resultData.accessToken, {
           path: '/',
-          expires: new Date(Date.now() + 1000 * 60 * 60),
+          expires: new Date(Date.now() + +process.env.COOKIE_EXPIRE_TIME),
           httpOnly: true,
           sameSite: 'lax',
         })
@@ -203,6 +204,20 @@ export class AuthController {
       } else {
         throw error;
       }
+    }
+  }
+
+  @Post('refresh')
+  @ApiUnauthorizedResponse({ description: 'Refresh token is invalid' })
+  async refreshToken(@Body('refreshToken') refreshToken: string) {
+    try {
+      const user = await this.authService.verifyTokenService(refreshToken);
+      const resultTokens = await this.authService.freshTokenService(
+        user.us_email,
+      );
+      return resultTokens;
+    } catch (error) {
+      throw error;
     }
   }
 }

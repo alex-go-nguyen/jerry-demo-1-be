@@ -49,7 +49,7 @@ export class AccountController {
     try {
       const user = request['user'];
       //  eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { ac_createdAt, ac_updatedAt, ...account } =
+      const { createdAt, updatedAt, ...account } =
         await this.accountService.createAccountService(user, createAccountDto);
       response.status(HttpStatus.OK).json({
         ...handleDataResponse('Store account successfully!'),

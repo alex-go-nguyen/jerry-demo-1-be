@@ -13,43 +13,45 @@ import { Account } from '@/modules/account/entities/account.entity';
 @Entity()
 export class User {
   @ApiProperty()
-  @PrimaryGeneratedColumn('uuid')
-  us_id: string;
+  @PrimaryGeneratedColumn('uuid', { name: 'us_id' })
+  id: string;
 
-  @Column()
   @ApiProperty()
-  us_name: string;
+  @Column({ name: 'us_name' })
+  name: string;
 
   @Column({ unique: true })
   @ApiProperty()
-  us_email: string;
+  @Column({ name: 'us_email' })
+  email: string;
 
-  @Column()
   @ApiProperty()
-  us_password: string;
+  @Column({ name: 'us_password' })
+  password: string;
 
-  @Column({ default: false })
   @ApiProperty()
-  us_isAuthenticated: boolean;
+  @Column({ name: 'us_isAuthenticated', default: false })
+  isAuthenticated: boolean;
 
   @Column({
     type: 'enum',
+    name: 'us_roles',
     enum: Role,
     array: true,
     default: [Role.User],
   })
   @ApiProperty({ isArray: true })
-  us_roles: Role[];
+  roles: Role[];
 
   @OneToMany(() => Account, (account) => account.user)
   @ApiProperty({ type: () => [Account] })
   accounts: Account[];
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'us_createdAt' })
   @ApiProperty()
-  ac_createdAt: Date;
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'us_updatedAt' })
   @ApiProperty()
-  ac_updatedAt: Date;
+  updatedAt: Date;
 }

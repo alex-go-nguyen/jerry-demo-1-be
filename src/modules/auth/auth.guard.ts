@@ -21,13 +21,12 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Token missing or invalid');
     }
 
-    const user = await this.authService.verifyToken(token);
-
-    if (!user) {
+    try {
+      const user = await this.authService.verifyTokenService(token);
+      request.user = user;
+    } catch {
       throw new UnauthorizedException('Invalid token');
     }
-
-    request.user = user;
     return true;
   }
   private extractTokenFromHeader(request: Request): string | undefined {

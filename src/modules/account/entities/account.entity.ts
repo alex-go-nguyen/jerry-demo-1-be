@@ -13,31 +13,31 @@ import { User } from '@/modules/user/entities/user.entity';
 @Entity()
 export class Account {
   @ApiProperty()
-  @PrimaryGeneratedColumn('uuid')
-  ac_id: string;
+  @PrimaryGeneratedColumn('uuid', { name: 'ac_id' })
+  id: string;
 
   @ApiProperty()
-  @ManyToOne(() => User, (user) => user.accounts, { eager: false })
+  @ManyToOne(() => User, (user) => user.accounts, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'us_id' })
   user: User;
 
-  @Column()
   @ApiProperty()
-  ac_domain: string;
+  @Column({ name: 'ac_domain' })
+  domain: string;
 
-  @Column()
   @ApiProperty()
-  ac_username: string;
+  @Column({ name: 'ac_username' })
+  username: string;
 
-  @Column()
   @ApiProperty()
-  ac_password: string;
+  @Column({ name: 'ac_password' })
+  password: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'ac_createdAt' })
   @ApiProperty()
-  ac_createdAt: Date;
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'ac_updatedAt' })
   @ApiProperty()
-  ac_updatedAt: Date;
+  updatedAt: Date;
 }

@@ -52,7 +52,7 @@ export class AuthService {
     }
 
     const existedUser = await this.userRepository.findOne({
-      where: { us_email: userData.email },
+      where: { email: userData.email },
     });
 
     if (existedUser) {
@@ -62,17 +62,17 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     const newUser = this.userRepository.create({
-      us_name: userData.name,
-      us_email: userData.email,
-      us_password: hashedPassword,
+      name: userData.name,
+      email: userData.email,
+      password: hashedPassword,
     });
 
     const saveUser = await this.userRepository.save(newUser);
 
-    const url = `${this.configService.get<string>('WEB_CLIENT_URL')}/auth/confirm-email/${saveUser.us_id}`;
+    const url = `${this.configService.get<string>('WEB_CLIENT_URL')}/confirm-email/${saveUser.id}`;
 
     await this.mailerService.sendMail({
-      to: saveUser.us_email,
+      to: saveUser.email,
       from: 'Anh bao',
       subject: 'Verify email',
       template: 'verification_email',
@@ -87,10 +87,10 @@ export class AuthService {
       throw new Error(ErrorCode.MISSING_INPUT);
     }
     const existedUser = await this.userRepository.findOne({
-      where: { us_id: confirmData.id },
+      where: { id: confirmData.id },
     });
     if (existedUser) {
-      existedUser.us_isAuthenticated = true;
+      existedUser.isAuthenticated = true;
       await this.userRepository.save(existedUser);
     } else {
       throw new Error(ErrorCode.EMAIL_ALREADY_REGISTERED);
@@ -99,29 +99,40 @@ export class AuthService {
 
   async loginService(userData: LoginUserDto) {
     const existedUser = await this.userRepository.findOne({
-      where: { us_email: userData.email },
+      where: { email: userData.email },
     });
     if (!existedUser) {
       throw new Error(ErrorCode.USER_NOT_FOUND);
-    }
-    if (existedUser) {
-      if (!existedUser.us_isAuthenticated) {
+    } else {
+      if (!existedUser.isAuthenticated) {
         throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
       }
       const isCorrectPassword = bcrypt.compareSync(
         userData.password,
-        existedUser.us_password,
+        existedUser.password,
       );
       if (!isCorrectPassword) {
         throw new Error(ErrorCode.INCORRECT_PASSWORD);
       }
-      const token = await this.generateToken(existedUser);
+      const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
+        this.generateToken(existedUser, process.env.ACCESS_TOKEN_EXPIRATION),
+        this.generateToken(existedUser, process.env.REFRESH_TOKEN_EXPIRATION),
+      ]);
+
+      if (
+        accessTokenResult.status === 'rejected' ||
+        refreshTokenResult.status === 'rejected'
+      ) {
+        throw new Error('Error generating tokens');
+      }
+
       return {
-        token,
+        accessToken: accessTokenResult.value,
+        refreshToken: refreshTokenResult.value,
         currentUser: {
-          us_id: existedUser.us_id,
-          us_name: existedUser.us_name,
-          us_email: existedUser.us_email,
+          id: existedUser.id,
+          name: existedUser.name,
+          email: existedUser.email,
         },
       };
     }
@@ -129,14 +140,14 @@ export class AuthService {
 
   async forgotPasswordService(forgotPasswordData: ForgotPasswordDto) {
     const existedUser = await this.userRepository.findOne({
-      where: { us_email: forgotPasswordData.email },
+      where: { email: forgotPasswordData.email },
     });
 
     if (!existedUser) {
       throw new Error(ErrorCode.USER_NOT_FOUND);
     }
 
-    if (!existedUser.us_isAuthenticated) {
+    if (!existedUser.isAuthenticated) {
       throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
     }
     const verificationToken = Math.floor(
@@ -166,28 +177,61 @@ export class AuthService {
 
   async resetPasswordService(userData: LoginUserDto) {
     const existedUser = await this.userRepository.findOne({
-      where: { us_email: userData.email },
+      where: { email: userData.email },
     });
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-    existedUser.us_password = hashedPassword;
+    existedUser.password = hashedPassword;
 
     await this.userRepository.save(existedUser);
   }
 
-  async verifyToken(token: string) {
+  async verifyTokenService(token: string) {
     return await this.jwtService.verifyAsync(token, {
       secret: this.configService.get<string>('JWT_SECRET'),
     });
   }
 
-  async generateToken(user: User): Promise<string> {
-    const payload = {
-      us_name: user.us_name,
-      us_id: user.us_id,
-      us_roles: user.us_roles,
+  async freshTokenService(email: string) {
+    const existedUser = await this.userRepository.findOne({
+      where: { email },
+    });
+    if (!existedUser) {
+      throw new Error(ErrorCode.USER_NOT_FOUND);
+    }
+
+    const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
+      this.generateToken(existedUser, '1h'),
+      this.generateToken(existedUser, '1d'),
+    ]);
+
+    if (
+      accessTokenResult.status === 'rejected' ||
+      refreshTokenResult.status === 'rejected'
+    ) {
+      throw new Error('Error generating tokens');
+    }
+
+    return {
+      accessToken: accessTokenResult.value,
+      refreshToken: refreshTokenResult.value,
     };
-    return this.jwtService.signAsync(payload);
+  }
+
+  private async generateToken(
+    user: User,
+    expiresIn: string | number,
+  ): Promise<string> {
+    const payload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles: user.roles,
+    };
+
+    return this.jwtService.signAsync(payload, {
+      expiresIn,
+    });
   }
 }
