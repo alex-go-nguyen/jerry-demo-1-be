@@ -132,6 +132,7 @@ export class AuthService {
         currentUser: {
           id: existedUser.id,
           name: existedUser.name,
+          role: existedUser.role,
           email: existedUser.email,
         },
       };
@@ -227,7 +228,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
-      roles: user.roles,
+      role: user.role,
     };
 
     return this.jwtService.signAsync(payload, {

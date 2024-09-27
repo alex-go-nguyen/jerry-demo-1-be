@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 
 import { ApiTags } from '@nestjs/swagger';
 
@@ -19,6 +19,23 @@ import { User } from './entities/user.entity';
 @UseGuards(AuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('')
+  @Roles(Role.Admin)
+  async getUsers(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    try {
+      const currentPage = Math.max(Number(page), 1);
+      const pageSize = Math.max(Number(limit), 1);
+
+      const dataUsers = await this.usersService.getUsers(currentPage, pageSize);
+      return dataUsers;
+    } catch (error) {
+      throw error;
+    }
+  }
 
   @Get('/currentUser')
   @Roles(Role.Admin, Role.User)

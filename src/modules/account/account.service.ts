@@ -33,7 +33,7 @@ export class AccountService {
     );
 
     const newAccount = this.accountRepository.create({
-      user: user.us_id,
+      user: user.id,
       domain: createAccountData.domain,
       username: createAccountData.username,
       password: encryptedPassword,
