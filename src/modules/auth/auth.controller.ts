@@ -101,7 +101,7 @@ export class AuthController {
     try {
       const token = await this.authService.loginService(userData);
       response
-        .cookie('auth_token', token, {
+        .cookie('access_token', token, {
           path: '/',
           expires: new Date(Date.now() + 1000 * 60 * 60),
           httpOnly: true,
@@ -117,6 +117,14 @@ export class AuthController {
       } else {
         throw error;
       }
+    }
+  }
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) response: Response) {
+    try {
+      response.clearCookie('access_token');
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -158,6 +166,26 @@ export class AuthController {
     } catch (error) {
       if (error.message === ErrorCode.OTP_INVALID) {
         throw new BadRequestException(ErrorCode.OTP_INVALID);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  @Post('reset-password')
+  @ApiConflictResponse({ description: 'Email has not been confirmed!' })
+  async resetPassword(
+    @Body() userData: LoginUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    try {
+      await this.authService.resetPasswordService(userData);
+      response
+        .status(HttpStatus.OK)
+        .json(handleDataResponse('Reset password successfully', 'OK'));
+    } catch (error) {
+      if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
+        throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);
       } else {
         throw error;
       }

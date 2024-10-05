@@ -18,17 +18,17 @@ export const exceptionCase = {
     errorCode: ErrorCode.INCORRECT_PASSWORD,
   },
   [ErrorCode.USER_NOT_FOUND]: {
-    status: HttpStatus.NOT_FOUND,
+    status: HttpStatus.BAD_REQUEST,
     message: 'Email is not registered!',
     errorCode: ErrorCode.USER_NOT_FOUND,
   },
   [ErrorCode.OTP_INVALID]: {
-    status: HttpStatus.CONFLICT,
+    status: HttpStatus.BAD_REQUEST,
     message: 'OTP is expired or invalid!',
     errorCode: ErrorCode.OTP_INVALID,
   },
   [ErrorCode.MISSING_INPUT]: {
-    status: HttpStatus.NOT_ACCEPTABLE,
+    status: HttpStatus.BAD_REQUEST,
     message: 'Missing input!',
     errorCode: ErrorCode.MISSING_INPUT,
   },

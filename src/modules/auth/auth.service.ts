@@ -68,7 +68,7 @@ export class AuthService {
 
     const saveUser = await this.userRepository.save(newUser);
 
-    const url = `${this.configService.get<string>('CLIENT_URL')}/auth/confirm/${saveUser.id}`;
+    const url = `${this.configService.get<string>('CLIENT_URL')}/auth/confirm-email/${saveUser.id}`;
 
     await this.mailerService.sendMail({
       to: saveUser.email,
@@ -100,6 +100,9 @@ export class AuthService {
     const existedUser = await this.userRepository.findOne({
       where: { email: userData.email },
     });
+    if (!existedUser) {
+      throw new Error(ErrorCode.USER_NOT_FOUND);
+    }
     if (existedUser) {
       if (!existedUser.isAuthenticated) {
         throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
@@ -112,7 +115,6 @@ export class AuthService {
         throw new Error(ErrorCode.INCORRECT_PASSWORD);
       }
       const token = await this.generateToken(existedUser);
-
       return token;
     }
   }
@@ -145,12 +147,25 @@ export class AuthService {
       },
     });
   }
+
   async verifyOTPService(verifyOtpData: VerifyOtpDto) {
     const storedOTP = cache.get(`otp:${verifyOtpData.email}`);
     if (!storedOTP || storedOTP !== verifyOtpData.otp) {
       throw new Error(ErrorCode.OTP_INVALID);
     }
     cache.delete(`otp:${verifyOtpData.email}`);
+  }
+
+  async resetPasswordService(userData: LoginUserDto) {
+    const existedUser = await this.userRepository.findOne({
+      where: { email: userData.email },
+    });
+
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+    existedUser.password = hashedPassword;
+
+    await this.userRepository.save(existedUser);
   }
   async verifyToken(token: string) {
     return await this.jwtService.verifyAsync(token, {

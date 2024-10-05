@@ -1,6 +1,9 @@
-export const handleDataResponse = (msg: string, statusCode?: string | null) => {
+export const handleDataResponse = (
+  message: string,
+  statusCode?: string | null,
+) => {
   return {
     statusCode: statusCode ?? 'OK',
-    msg,
+    message,
   };
 };
