@@ -8,6 +8,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 
 import { Response } from 'express';
@@ -21,6 +22,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { handleDataResponse } from '@/utils';
@@ -97,18 +99,31 @@ export class AuthController {
   async login(
     @Body() userData: LoginUserDto,
     @Res({ passthrough: true }) response: Response,
+    @Req() request: Request,
   ) {
     try {
-      const token = await this.authService.loginService(userData);
+      const resultData = await this.authService.loginService(userData);
+      const referer = request.headers['origin'];
+      if (referer && referer.startsWith('chrome-extension://')) {
+        response.status(HttpStatus.OK).json({
+          ...handleDataResponse('Login successfully!'),
+          ...resultData,
+        });
+        return;
+      }
+
       response
-        .cookie('access_token', token, {
+        .cookie('access_token', resultData.accessToken, {
           path: '/',
-          expires: new Date(Date.now() + 1000 * 60 * 60),
+          expires: new Date(Date.now() + +process.env.COOKIE_EXPIRE_TIME),
           httpOnly: true,
           sameSite: 'lax',
         })
         .status(HttpStatus.OK)
-        .json(handleDataResponse('Login successfully!'));
+        .json({
+          ...handleDataResponse('Login successfully!'),
+          currentUser: { ...resultData.currentUser },
+        });
     } catch (error) {
       if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
         throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);
@@ -189,6 +204,20 @@ export class AuthController {
       } else {
         throw error;
       }
+    }
+  }
+
+  @Post('refresh')
+  @ApiUnauthorizedResponse({ description: 'Refresh token is invalid' })
+  async refreshToken(@Body('refreshToken') refreshToken: string) {
+    try {
+      const user = await this.authService.verifyTokenService(refreshToken);
+      const resultTokens = await this.authService.freshTokenService(
+        user.us_email,
+      );
+      return resultTokens;
+    } catch (error) {
+      throw error;
     }
   }
 }

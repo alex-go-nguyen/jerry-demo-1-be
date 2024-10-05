@@ -62,13 +62,14 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     const newUser = this.userRepository.create({
-      ...userData,
+      name: userData.name,
+      email: userData.email,
       password: hashedPassword,
     });
 
     const saveUser = await this.userRepository.save(newUser);
 
-    const url = `${this.configService.get<string>('CLIENT_URL')}/auth/confirm-email/${saveUser.id}`;
+    const url = `${this.configService.get<string>('WEB_CLIENT_URL')}/confirm-email/${saveUser.id}`;
 
     await this.mailerService.sendMail({
       to: saveUser.email,
@@ -102,8 +103,7 @@ export class AuthService {
     });
     if (!existedUser) {
       throw new Error(ErrorCode.USER_NOT_FOUND);
-    }
-    if (existedUser) {
+    } else {
       if (!existedUser.isAuthenticated) {
         throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
       }
@@ -114,8 +114,27 @@ export class AuthService {
       if (!isCorrectPassword) {
         throw new Error(ErrorCode.INCORRECT_PASSWORD);
       }
-      const token = await this.generateToken(existedUser);
-      return token;
+      const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
+        this.generateToken(existedUser, process.env.ACCESS_TOKEN_EXPIRATION),
+        this.generateToken(existedUser, process.env.REFRESH_TOKEN_EXPIRATION),
+      ]);
+
+      if (
+        accessTokenResult.status === 'rejected' ||
+        refreshTokenResult.status === 'rejected'
+      ) {
+        throw new Error('Error generating tokens');
+      }
+
+      return {
+        accessToken: accessTokenResult.value,
+        refreshToken: refreshTokenResult.value,
+        currentUser: {
+          id: existedUser.id,
+          name: existedUser.name,
+          email: existedUser.email,
+        },
+      };
     }
   }
 
@@ -167,13 +186,52 @@ export class AuthService {
 
     await this.userRepository.save(existedUser);
   }
-  async verifyToken(token: string) {
+
+  async verifyTokenService(token: string) {
     return await this.jwtService.verifyAsync(token, {
       secret: this.configService.get<string>('JWT_SECRET'),
     });
   }
-  async generateToken(user: User): Promise<string> {
-    const payload = { userName: user.name, userId: user.id, roles: user.roles };
-    return this.jwtService.signAsync(payload);
+
+  async freshTokenService(email: string) {
+    const existedUser = await this.userRepository.findOne({
+      where: { email },
+    });
+    if (!existedUser) {
+      throw new Error(ErrorCode.USER_NOT_FOUND);
+    }
+
+    const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
+      this.generateToken(existedUser, '1h'),
+      this.generateToken(existedUser, '1d'),
+    ]);
+
+    if (
+      accessTokenResult.status === 'rejected' ||
+      refreshTokenResult.status === 'rejected'
+    ) {
+      throw new Error('Error generating tokens');
+    }
+
+    return {
+      accessToken: accessTokenResult.value,
+      refreshToken: refreshTokenResult.value,
+    };
+  }
+
+  private async generateToken(
+    user: User,
+    expiresIn: string | number,
+  ): Promise<string> {
+    const payload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles: user.roles,
+    };
+
+    return this.jwtService.signAsync(payload, {
+      expiresIn,
+    });
   }
 }

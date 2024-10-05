@@ -1,14 +1,21 @@
 import { Module } from '@nestjs/common';
+
+import { APP_GUARD } from '@nestjs/core';
+
 import { ConfigModule } from '@nestjs/config';
 
-import { MailerModule } from '@nestjs-modules/mailer';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
+import { MailerModule } from '@nestjs-modules/mailer';
 import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
 
 import { DatabaseModule } from '@/database/database.module';
 
 import { AuthModule } from '@/modules/auth/auth.module';
+
 import { UsersModule } from '@/modules/user/user.module';
+
+import { AccountModule } from '@/modules/account/account.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -40,11 +47,24 @@ import { AppService } from './app.service';
         },
       },
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: +process.env.TIME_TO_LIVE,
+        limit: +process.env.RATE_LIMIT,
+      },
+    ]),
     DatabaseModule,
     AuthModule,
     UsersModule,
+    AccountModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
