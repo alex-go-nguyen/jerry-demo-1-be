@@ -74,10 +74,9 @@ export class AccountController {
     try {
       const user = request['user'];
       const listAccounts = await this.accountService.getAccountsByUserId(
-        user.us_id,
+        user.id,
       );
       return listAccounts;
-      return;
     } catch (error) {
       throw error;
     }
