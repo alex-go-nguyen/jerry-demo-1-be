@@ -9,6 +9,9 @@ import {
   UseGuards,
   Get,
   HttpCode,
+  Param,
+  Put,
+  Delete,
 } from '@nestjs/common';
 
 import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
@@ -28,6 +31,7 @@ import { AuthGuard } from '@/modules/auth/auth.guard';
 import { AccountService } from './account.service';
 
 import { CreateAccountDto } from './dto/create-account.dto';
+import { UpdateAccountDto } from './dto';
 
 @ApiTags('Account')
 @Controller('accounts')
@@ -77,6 +81,66 @@ export class AccountController {
         user.id,
       );
       return listAccounts;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Get(':accountId')
+  @Roles(Role.User)
+  @HttpCode(200)
+  @ApiOkResponse({
+    description: 'Get account by id successfully!',
+  })
+  async getAccountById(
+    @Param('accountId') accountId: string,
+    @Req() request: Request,
+  ) {
+    try {
+      const user = request['user'];
+      return await this.accountService.getAccountByUserIdAndAccountId(
+        user.id,
+        accountId,
+      );
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
+  @Put('update/:accountId')
+  @Roles(Role.User)
+  @HttpCode(200)
+  @ApiOkResponse({
+    description: 'Update account successfully!',
+  })
+  async updateAccount(
+    @Param('accountId') accountId: string,
+    @Req() request: Request,
+    @Body() updateAccountData: UpdateAccountDto,
+  ) {
+    try {
+      const user = request['user'];
+      return await this.accountService.updateAccount(
+        user.id,
+        accountId,
+        updateAccountData,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+  @Delete('delete/:accountId')
+  @Roles(Role.User)
+  @HttpCode(204)
+  @ApiOkResponse({
+    description: 'Delete account successfully!',
+  })
+  async deleteAccount(
+    @Param('accountId') accountId: string,
+    @Req() request: Request,
+  ) {
+    try {
+      const user = request['user'];
+      return await this.accountService.deleteAccount(user.id, accountId);
     } catch (error) {
       throw error;
     }
