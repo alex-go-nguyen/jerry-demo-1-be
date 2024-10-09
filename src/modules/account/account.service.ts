@@ -106,19 +106,25 @@ export class AccountService {
     const updatedAccount = await this.accountRepository.save(existedAccount);
     return updatedAccount;
   }
-  async deleteAccount(userId: string, accountId: string) {
+  async softRemove(userId: string, accountId: string) {
     if (!userId || !accountId) {
       throw new Error(ErrorCode.MISSING_INPUT);
     }
 
-    const result = await this.accountRepository.delete({
-      id: accountId,
+    const existedAccount = await this.accountRepository.findOne({
+      where: { id: accountId, user: { id: userId } },
+      relations: ['user'],
+      select: {
+        user: { id: true },
+      },
     });
 
-    if (result.affected === 0) {
-      throw new Error(ErrorCode.ACCOUNT_NOT_FOUND);
-    }
+    if (!existedAccount) throw new Error(ErrorCode.ACCOUNT_NOT_FOUND);
 
-    return result;
+    await this.accountRepository.softRemove(existedAccount);
+  }
+
+  async restore(accountId: string) {
+    await this.accountRepository.restore({ id: accountId });
   }
 }

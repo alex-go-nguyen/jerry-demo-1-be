@@ -134,13 +134,13 @@ export class AccountController {
   @ApiOkResponse({
     description: 'Delete account successfully!',
   })
-  async deleteAccount(
+  async softRemove(
     @Param('accountId') accountId: string,
     @Req() request: Request,
   ) {
     try {
       const user = request['user'];
-      return await this.accountService.deleteAccount(user.id, accountId);
+      return await this.accountService.softRemove(user.id, accountId);
     } catch (error) {
       throw error;
     }
