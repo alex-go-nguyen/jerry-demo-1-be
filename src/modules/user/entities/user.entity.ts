@@ -7,8 +7,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToMany,
 } from 'typeorm';
 import { Account } from '@/modules/account/entities/account.entity';
+import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
 @Entity()
 export class User {
@@ -42,6 +44,10 @@ export class User {
   @OneToMany(() => Account, (account) => account.user)
   @ApiProperty({ type: () => [Account] })
   accounts: Account[];
+
+  @ManyToMany(() => Workspace, (workspace) => workspace.members)
+  @ApiProperty()
+  workspaces: Workspace[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   @ApiProperty()
