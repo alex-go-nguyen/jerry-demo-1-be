@@ -19,6 +19,8 @@ import { AccountModule } from '@/modules/account/account.module';
 
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 
+import { WorkspaceModule } from './modules/workspace/workspace.module';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -60,6 +62,7 @@ import { AppService } from './app.service';
     UsersModule,
     AccountModule,
     DashboardModule,
+    WorkspaceModule,
   ],
   controllers: [AppController],
   providers: [
