@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invitation to Join Workspace</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        background-color: #ffffff;
+        padding: 30px 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        text-align: center;
+      }
+
+      .header {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333333;
+        margin-bottom: 20px;
+      }
+
+      .sub-header {
+        font-size: 18px;
+        color: #666666;
+        margin-bottom: 30px;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 12px 25px;
+        background-color: #28a745;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: bold;
+        margin-top: 20px;
+        box-shadow: 0 4px 14px rgba(40, 167, 69, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .button:hover {
+        background-color: #218838;
+        box-shadow: 0 6px 18px rgba(40, 167, 69, 0.4);
+      }
+
+      .footer {
+        margin-top: 30px;
+        font-size: 14px;
+        color: #999999;
+      }
+
+      .footer a {
+        color: #007bff;
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="header"><%= ownerName %> invited you to join the workspace</h1>
+      <p class="sub-header">
+        Join the "<strong><%= workspaceName %></strong>" workspace and
+        collaborate with your team members to achieve great things!
+      </p>
+      <a href="<%= url %>" class="button">Accept Invitation</a>
+      <div class="footer">
+        <p>
+          If you have any questions, feel free to
+          <a href="mailto:support@example.com">contact us</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
