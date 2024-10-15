@@ -46,7 +46,7 @@ import { AppService } from './app.service';
         from: process.env.EMAIL_SENDER,
       },
       template: {
-        dir: __dirname + '/templates/',
+        dir: './dist/templates/',
         adapter: new EjsAdapter({ inlineCssEnabled: true }),
         options: {
           strict: false,

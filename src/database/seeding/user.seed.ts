@@ -19,6 +19,8 @@ export async function seedUsers() {
     user.name = faker.person.fullName();
     user.email = faker.internet.email();
     user.password = faker.internet.password();
+    user.phoneNumber = faker.phone.number();
+    user.avatar = faker.image.url();
     user.isAuthenticated = faker.datatype.boolean();
     user.role = Role.User;
 
