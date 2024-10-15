@@ -44,7 +44,7 @@ export class WorkspaceService {
       accounts,
     });
 
-    return this.workspaceRepository.save(newWorkspace);
+    return await this.workspaceRepository.save(newWorkspace);
   }
 
   async getWorkspacesByUserId(userId: string) {
@@ -68,10 +68,6 @@ export class WorkspaceService {
       .where('owner.id = :userId OR members.id = :userId', { userId })
       .andWhere('workspace.deletedAt IS NULL')
       .getMany();
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} workspace`;
   }
 
   async update(updateWorkspaceDto: UpdateWorkspaceDto) {
