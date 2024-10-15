@@ -47,8 +47,9 @@ export class SharingWorkspaceService {
     }
 
     const emailList = createSharingWorkspaceDto.emails;
+
     for (const email of emailList) {
-      const invitation = await this.workspaceSharingInvitationRepository.save({
+      const invitation = this.workspaceSharingInvitationRepository.create({
         owner: workspace.owner,
         workspace: workspace,
         email: email,
@@ -68,7 +69,7 @@ export class SharingWorkspaceService {
           url: confirmationUrl,
         },
       });
-      await this.workspaceSharingInvitationRepository.save(invitation);
+      return await this.workspaceSharingInvitationRepository.save(invitation);
     }
   }
   async confirmInvitation(inviteId: string) {
