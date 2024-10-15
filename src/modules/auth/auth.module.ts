@@ -5,9 +5,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
+import { LRUCache } from 'lru-cache';
+
+import { User } from '@/modules/user/entities/user.entity';
+
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { User } from '@/modules/user/entities/user.entity';
 
 @Module({
   imports: [
@@ -21,7 +24,20 @@ import { User } from '@/modules/user/entities/user.entity';
       }),
     }),
   ],
-  providers: [AuthService],
+  providers: [
+    AuthService,
+    {
+      provide: LRUCache,
+      useFactory: () => {
+        return new LRUCache<string, string>({
+          max: 500,
+          maxSize: 5000,
+          ttl: 1000 * 60 * 5,
+          sizeCalculation: () => 1,
+        });
+      },
+    },
+  ],
   controllers: [AuthController],
   exports: [AuthService],
 })
