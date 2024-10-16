@@ -30,6 +30,14 @@ export class User {
   password: string;
 
   @ApiProperty()
+  @Column({ nullable: true })
+  phoneNumber: string;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  avatar: string;
+
+  @ApiProperty()
   @Column({ default: false })
   isAuthenticated: boolean;
 
