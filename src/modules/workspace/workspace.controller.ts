@@ -72,11 +72,6 @@ export class WorkspaceController {
     }
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.workspaceService.findOne(+id);
-  }
-
   @Put('update/:workspaceId')
   @Roles(Role.User)
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
