@@ -22,16 +22,6 @@ import { ForgotPasswordDto } from '@/modules/user/dtos/forgot-password.dto';
 
 import { VerifyOtpDto } from './dtos/verity-otp.dto';
 
-const options = {
-  max: 500,
-  maxSize: 5000,
-  ttl: 1000 * 60 * 5,
-  sizeCalculation: () => {
-    return 1;
-  },
-};
-const cache = new LRUCache(options);
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -40,6 +30,7 @@ export class AuthService {
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
     private jwtService: JwtService,
+    private readonly cache: LRUCache<string, string>,
   ) {}
 
   async registerService(userData: CreateUserDto) {
@@ -155,7 +146,7 @@ export class AuthService {
       100000 + Math.random() * 900000,
     ).toString();
 
-    cache.set(`otp:${forgotPasswordData.email}`, verificationToken);
+    this.cache.set(`otp:${forgotPasswordData.email}`, verificationToken);
 
     await this.mailerService.sendMail({
       to: forgotPasswordData.email,
@@ -169,11 +160,10 @@ export class AuthService {
   }
 
   async verifyOTPService(verifyOtpData: VerifyOtpDto) {
-    const storedOTP = cache.get(`otp:${verifyOtpData.email}`);
+    const storedOTP = this.cache.get(`otp:${verifyOtpData.email}`);
     if (!storedOTP || storedOTP !== verifyOtpData.otp) {
       throw new Error(ErrorCode.OTP_INVALID);
     }
-    cache.delete(`otp:${verifyOtpData.email}`);
   }
 
   async resetPasswordService(userData: LoginUserDto) {
@@ -181,11 +171,25 @@ export class AuthService {
       where: { email: userData.email },
     });
 
+    if (!existedUser) {
+      throw new Error(ErrorCode.USER_NOT_FOUND);
+    }
+
+    if (!existedUser.isAuthenticated) {
+      throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
+    }
+    const storedOTP = this.cache.get(`otp:${userData.email}`);
+
+    if (!storedOTP) {
+      throw new Error(ErrorCode.OTP_INVALID);
+    }
+
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     existedUser.password = hashedPassword;
 
-    await this.userRepository.save(existedUser);
+    this.cache.delete(`otp:${userData.email}`);
+    return await this.userRepository.save(existedUser);
   }
 
   async verifyTokenService(token: string) {
@@ -220,10 +224,7 @@ export class AuthService {
     };
   }
 
-  private async generateToken(
-    user: User,
-    expiresIn: string | number,
-  ): Promise<string> {
+  async generateToken(user: User, expiresIn: string | number): Promise<string> {
     const payload = {
       id: user.id,
       email: user.email,
