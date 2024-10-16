@@ -27,7 +27,13 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "lint-staged": "lint-staged",
     "prepare": "husky",
-    "seed": "ts-node -r tsconfig-paths/register src/database/seeding/main.seed.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeding/main.seed.ts",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli",
+    "typeorm:run-migrations": "npm run typeorm migration:run -- -d ./typeorm.config.ts",
+    "typeorm:generate-migration": "npm run typeorm -- -d ./typeorm.config.ts migration:generate ./src/database/migrations/$npm_config_name",
+    "typeorm:create-migration": "npm run typeorm -- migration:create ./src/database/migrations/$npm_config_name",
+    "typeorm:revert-migration": "npm run typeorm -- -d ./typeorm.config.ts migration:revert",
+    "typeorm:drop-migration": "npm run typeorm -- -d ./typeorm.config.ts schema:drop"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
