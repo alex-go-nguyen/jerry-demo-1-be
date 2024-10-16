@@ -212,7 +212,9 @@ export class AuthController {
   async refreshToken(@Body('refreshToken') refreshToken: string) {
     try {
       const user = await this.authService.verifyTokenService(refreshToken);
-      const resultTokens = await this.authService.freshTokenService(user.email);
+      const resultTokens = await this.authService.freshTokenService(
+        user.us_email,
+      );
       return resultTokens;
     } catch (error) {
       throw error;

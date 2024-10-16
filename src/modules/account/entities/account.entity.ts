@@ -7,11 +7,8 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  ManyToMany,
-  DeleteDateColumn,
 } from 'typeorm';
 import { User } from '@/modules/user/entities/user.entity';
-import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
 @Entity()
 export class Account {
@@ -36,9 +33,6 @@ export class Account {
   @Column()
   password: string;
 
-  @ManyToMany(() => Workspace, (workspace) => workspace.accounts)
-  workspaces: Workspace[];
-
   @CreateDateColumn({ type: 'timestamptz' })
   @ApiProperty()
   createdAt: Date;
@@ -46,8 +40,4 @@ export class Account {
   @UpdateDateColumn({ type: 'timestamptz' })
   @ApiProperty()
   updatedAt: Date;
-
-  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
-  @ApiProperty()
-  deletedAt?: Date;
 }

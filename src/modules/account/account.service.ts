@@ -9,7 +9,7 @@ import { EncryptionService } from '@/encryption/encryption.service';
 
 import { Account } from './entities/account.entity';
 
-import { CreateAccountDto, UpdateAccountDto } from './dto';
+import { CreateAccountDto } from './dto/create-account.dto';
 
 @Injectable()
 export class AccountService {
@@ -51,80 +51,5 @@ export class AccountService {
       },
     });
     return listAccounts;
-  }
-
-  async getAccountByUserIdAndAccountId(
-    userId: string,
-    accountId: string,
-  ): Promise<Account> {
-    const account = await this.accountRepository.findOne({
-      where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
-      select: {
-        user: { id: true },
-      },
-    });
-
-    if (!account) {
-      throw new Error(ErrorCode.ACCOUNT_NOT_FOUND);
-    }
-
-    return account;
-  }
-
-  async updateAccount(
-    userId: string,
-    accountId: string,
-    updateAccountData: UpdateAccountDto,
-  ) {
-    if (
-      !updateAccountData.domain ||
-      !updateAccountData.username ||
-      !updateAccountData.password ||
-      !userId ||
-      !accountId
-    ) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
-
-    const existedAccount = await this.accountRepository.findOne({
-      where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
-      select: {
-        user: { id: true },
-      },
-    });
-
-    if (!existedAccount) throw new Error(ErrorCode.ACCOUNT_NOT_FOUND);
-
-    existedAccount.domain = updateAccountData.domain;
-    existedAccount.username = updateAccountData.username;
-    existedAccount.password = this.encryptionService.encryptPassword(
-      updateAccountData.password,
-    );
-
-    const updatedAccount = await this.accountRepository.save(existedAccount);
-    return updatedAccount;
-  }
-  async softRemove(userId: string, accountId: string) {
-    if (!userId || !accountId) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
-
-    const existedAccount = await this.accountRepository.findOne({
-      where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
-      select: {
-        user: { id: true },
-      },
-    });
-
-    if (!existedAccount) throw new Error(ErrorCode.ACCOUNT_NOT_FOUND);
-
-    await this.accountRepository.softRemove(existedAccount);
-  }
-
-  async restore(accountId: string) {
-    await this.accountRepository.restore({ id: accountId });
   }
 }
