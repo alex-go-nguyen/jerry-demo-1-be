@@ -12,7 +12,6 @@ import { Workspace } from './entities/workspace.entity';
 
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
-
 @Injectable()
 export class WorkspaceService {
   constructor(
@@ -65,7 +64,7 @@ export class WorkspaceService {
         'accounts.domain',
         'accounts.password',
       ])
-      .where('owner.id = :userId OR members.id = :userId', { userId })
+      .where('owner.id = :userId', { userId })
       .andWhere('workspace.deletedAt IS NULL')
       .getMany();
   }

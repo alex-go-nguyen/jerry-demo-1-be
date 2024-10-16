@@ -19,9 +19,7 @@ import { AccountModule } from '@/modules/account/account.module';
 
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 
-import { WorkspaceModule } from '@/modules/workspace/workspace.module';
-
-import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-workspace.module';
+import { WorkspaceModule } from './modules/workspace/workspace.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -65,7 +63,6 @@ import { AppService } from './app.service';
     AccountModule,
     DashboardModule,
     WorkspaceModule,
-    SharingWorkspaceModule,
   ],
   controllers: [AppController],
   providers: [
