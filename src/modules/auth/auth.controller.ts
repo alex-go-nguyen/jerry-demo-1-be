@@ -28,12 +28,12 @@ import {
 import { handleDataResponse } from '@/utils';
 
 import { AuthService } from '@/modules/auth/auth.service';
-import { LoginUserDto } from '@/modules/user/dtos/login-user.dto';
-import { CreateUserDto } from '@/modules/user/dtos/create-user.dto';
-import { ForgotPasswordDto } from '../user/dtos/forgot-password.dto';
-import { ConfirmEmailDto } from '@/modules/user/dtos/confirm-email.dto';
+import { LoginUserDto } from '@/modules/user/dtos/login-user.dto'
+import { CreateUserDto } from '@/modules/user/dtos/create-user.dto'
+import { ForgotPasswordDto } from '../user/dtos/forgot-password.dto'
+import { ConfirmEmailDto } from '@/modules/user/dtos/confirm-email.dto'
 
-import { VerifyOtpDto } from './dtos/verity-otp.dto';
+import { VerifyOtpDto } from './dtos/verity-otp.dto'
 
 @ApiTags('Auth')
 @Controller('auth')
