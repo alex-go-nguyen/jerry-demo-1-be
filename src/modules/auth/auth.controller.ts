@@ -4,16 +4,18 @@ import {
   Body,
   Res,
   HttpStatus,
-  ForbiddenException,
   ConflictException,
   NotFoundException,
   BadRequestException,
   Req,
+  UseGuards,
+  Patch,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import { Response } from 'express';
 
-import { ErrorCode } from '@/common/enums';
+import { ErrorCode, Role } from '@/common/enums';
 
 import {
   ApiBadRequestResponse,
@@ -28,13 +30,17 @@ import {
 import { handleDataResponse } from '@/utils';
 
 import { AuthService } from '@/modules/auth/auth.service';
-import { LoginUserDto } from '@/modules/user/dtos/login-user.dto'
-import { CreateUserDto } from '@/modules/user/dtos/create-user.dto'
-import { ForgotPasswordDto } from '../user/dtos/forgot-password.dto'
-import { ConfirmEmailDto } from '@/modules/user/dtos/confirm-email.dto'
+import { LoginUserDto } from '@/modules/user/dtos/login-user.dto';
+import { CreateUserDto } from '@/modules/user/dtos/create-user.dto';
+import { ForgotPasswordDto } from '@/modules/user/dtos/forgot-password.dto';
+import { ConfirmEmailDto } from '@/modules/user/dtos/confirm-email.dto';
+import { ChangePasswordDto } from '@/modules/user/dtos/change-password.dto';
 
-import { VerifyOtpDto } from './dtos/verity-otp.dto'
+import { AuthGuard } from './auth.guard';
+import { RolesGuard } from './roles.guard';
+import { Roles } from './roles.decorator';
 
+import { VerifyOtpDto } from './dtos/verity-otp.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -45,6 +51,7 @@ export class AuthController {
     description: 'The user has been successfully registered.',
   })
   @ApiConflictResponse({ description: 'Email is already registered!' })
+  @ApiBadRequestResponse({ description: 'Missing input!' })
   async register(
     @Body() userData: CreateUserDto,
     @Res({ passthrough: true }) response: Response,
@@ -59,7 +66,9 @@ export class AuthController {
           ),
         );
     } catch (error) {
-      if (error.message === ErrorCode.EMAIL_ALREADY_REGISTERED) {
+      if (error.message === ErrorCode.MISSING_INPUT) {
+        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      } else if (error.message === ErrorCode.EMAIL_ALREADY_REGISTERED) {
         throw new ConflictException(ErrorCode.EMAIL_ALREADY_REGISTERED);
       } else {
         throw error;
@@ -96,6 +105,7 @@ export class AuthController {
   })
   @ApiConflictResponse({ description: 'Email has not been confirmed!' })
   @ApiBadRequestResponse({ description: 'Incorrect password!' })
+  @ApiBadRequestResponse({ description: 'Missing input!' })
   async login(
     @Body() userData: LoginUserDto,
     @Res({ passthrough: true }) response: Response,
@@ -117,7 +127,8 @@ export class AuthController {
           path: '/',
           expires: new Date(Date.now() + +process.env.COOKIE_EXPIRE_TIME),
           httpOnly: true,
-          sameSite: 'lax',
+          sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'lax',
+          secure: process.env.NODE_ENV !== 'development',
         })
         .status(HttpStatus.OK)
         .json({
@@ -125,19 +136,27 @@ export class AuthController {
           currentUser: { ...resultData.currentUser },
         });
     } catch (error) {
-      if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
+      if (error.message === ErrorCode.MISSING_INPUT) {
+        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      } else if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
         throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);
       } else if (error.message === ErrorCode.INCORRECT_PASSWORD) {
-        throw new ForbiddenException(ErrorCode.INCORRECT_PASSWORD);
+        throw new BadRequestException(ErrorCode.INCORRECT_PASSWORD);
       } else {
         throw error;
       }
     }
   }
+
   @Post('logout')
   async logout(@Res({ passthrough: true }) response: Response) {
     try {
-      response.clearCookie('access_token');
+      response.clearCookie('access_token', {
+        path: '/',
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV !== 'development',
+      });
     } catch (error) {
       throw error;
     }
@@ -146,6 +165,7 @@ export class AuthController {
   @Post('forgot-password')
   @ApiOkResponse({ description: 'Please check your email to confirm forget' })
   @ApiNotFoundResponse({ description: 'Email is not registered!' })
+  @ApiBadRequestResponse({ description: 'Missing input!' })
   async forgotPassword(
     @Body() forgotPasswordData: ForgotPasswordDto,
     @Res({ passthrough: true }) response: Response,
@@ -158,8 +178,45 @@ export class AuthController {
           handleDataResponse('Please check your email to confirm forget', 'OK'),
         );
     } catch (error) {
-      if (error.message === ErrorCode.USER_NOT_FOUND) {
+      if (error.message === ErrorCode.MISSING_INPUT) {
+        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      } else if (error.message === ErrorCode.USER_NOT_FOUND) {
         throw new NotFoundException(ErrorCode.USER_NOT_FOUND);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.Admin, Role.User)
+  @Patch('change-password')
+  @ApiOkResponse({
+    description: 'Change password successfully!!',
+  })
+  @ApiBadRequestResponse({ description: 'Incorrect current password!' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiConflictResponse({ description: 'Email has not been confirmed!' })
+  @ApiBadRequestResponse({ description: 'Missing input!' })
+  async changePassword(
+    @Body() changePasswordData: ChangePasswordDto,
+    @Req() request: Request,
+  ) {
+    try {
+      const user = request['user'];
+      await this.authService.changePassword(user.id, changePasswordData);
+      return handleDataResponse('Change password successfully', 'OK');
+    } catch (error) {
+      if (error.message === ErrorCode.MISSING_INPUT) {
+        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      } else if (error.message === ErrorCode.USER_NOT_FOUND) {
+        throw new NotFoundException(ErrorCode.USER_NOT_FOUND);
+      } else if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
+        throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);
+      } else if (error.message === ErrorCode.INCORRECT_PASSWORD) {
+        throw new BadRequestException(ErrorCode.INCORRECT_PASSWORD);
+      } else if (error.message === ErrorCode.EMAIL_DEACTIVATED) {
+        throw new ForbiddenException(ErrorCode.EMAIL_DEACTIVATED);
       } else {
         throw error;
       }
@@ -169,6 +226,7 @@ export class AuthController {
   @Post('verify-otp')
   @ApiOkResponse({ description: 'OTP is verified' })
   @ApiBadRequestResponse({ description: 'OTP is expired or invalid!' })
+  @ApiBadRequestResponse({ description: 'Missing input!' })
   async verifyOTP(
     @Body() otpData: VerifyOtpDto,
     @Res({ passthrough: true }) response: Response,
@@ -179,7 +237,9 @@ export class AuthController {
         .status(HttpStatus.OK)
         .json(handleDataResponse('OTP is verified', 'OK'));
     } catch (error) {
-      if (error.message === ErrorCode.OTP_INVALID) {
+      if (error.message === ErrorCode.MISSING_INPUT) {
+        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      } else if (error.message === ErrorCode.OTP_INVALID) {
         throw new BadRequestException(ErrorCode.OTP_INVALID);
       } else {
         throw error;
@@ -189,6 +249,7 @@ export class AuthController {
 
   @Post('reset-password')
   @ApiConflictResponse({ description: 'Email has not been confirmed!' })
+  @ApiBadRequestResponse({ description: 'Missing input!' })
   async resetPassword(
     @Body() userData: LoginUserDto,
     @Res({ passthrough: true }) response: Response,
@@ -199,7 +260,9 @@ export class AuthController {
         .status(HttpStatus.OK)
         .json(handleDataResponse('Reset password successfully', 'OK'));
     } catch (error) {
-      if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
+      if (error.message === ErrorCode.MISSING_INPUT) {
+        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      } else if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
         throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);
       } else {
         throw error;
@@ -212,10 +275,16 @@ export class AuthController {
   async refreshToken(@Body('refreshToken') refreshToken: string) {
     try {
       const user = await this.authService.verifyTokenService(refreshToken);
-      const resultTokens = await this.authService.freshTokenService(user.email);
+      const resultTokens = await this.authService.reFreshTokenService(
+        user.email,
+      );
       return resultTokens;
     } catch (error) {
-      throw error;
+      if (error.message === ErrorCode.MISSING_INPUT) {
+        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      } else {
+        throw error;
+      }
     }
   }
 }

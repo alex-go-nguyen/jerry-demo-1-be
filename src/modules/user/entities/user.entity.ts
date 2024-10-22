@@ -8,6 +8,8 @@ import {
   UpdateDateColumn,
   OneToMany,
   ManyToMany,
+  JoinTable,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Account } from '@/modules/account/entities/account.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
@@ -22,9 +24,8 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ unique: true })
   @ApiProperty()
-  @Column()
+  @Column({ unique: true })
   email: string;
 
   @ApiProperty()
@@ -54,6 +55,7 @@ export class User {
   accounts: Account[];
 
   @ManyToMany(() => Workspace, (workspace) => workspace.members)
+  @JoinTable()
   @ApiProperty()
   workspaces: Workspace[];
 
@@ -64,4 +66,8 @@ export class User {
   @UpdateDateColumn({ type: 'timestamptz' })
   @ApiProperty()
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  @ApiProperty()
+  deletedAt?: Date;
 }

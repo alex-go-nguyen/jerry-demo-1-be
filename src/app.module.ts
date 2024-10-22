@@ -23,9 +23,6 @@ import { WorkspaceModule } from '@/modules/workspace/workspace.module';
 
 import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-workspace.module';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -67,9 +64,8 @@ import { AppService } from './app.service';
     WorkspaceModule,
     SharingWorkspaceModule,
   ],
-  controllers: [AppController],
+
   providers: [
-    AppService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

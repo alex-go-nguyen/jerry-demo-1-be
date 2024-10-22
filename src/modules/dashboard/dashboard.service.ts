@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
+import { Role } from '@/common/enums';
+
 import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
-import { Role } from '@/common/enums';
+import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
 @Injectable()
 export class DashboardService {
@@ -12,18 +16,18 @@ export class DashboardService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Account)
     private readonly accountRepository: Repository<Account>,
+    @InjectRepository(Workspace)
+    private readonly workspaceRepository: Repository<Workspace>,
   ) {}
 
-  async getUserRegistrations(): Promise<{
-    years: number[];
-    data: { month: string; year: number; value: number }[];
-  }> {
-    const result = await this.userRepository
+  async getUserRegistrations() {
+    const data = await this.userRepository
       .createQueryBuilder('user')
       .select("TO_CHAR(user.createdAt, 'Month') as month")
-      .addSelect('EXTRACT(YEAR FROM user.createdAt) as year')
-      .addSelect('COUNT(user.id) as value')
+      .addSelect('CAST(EXTRACT(YEAR FROM user.createdAt) AS INTEGER) as year')
+      .addSelect('CAST(COUNT(user.id) AS INTEGER) as value')
       .where('user.role <> :role', { role: Role.Admin })
+      .andWhere('(user.deletedAt IS NULL OR user.deletedAt IS NOT NULL)')
       .groupBy("TO_CHAR(user.createdAt, 'Month')")
       .addGroupBy('EXTRACT(YEAR FROM user.createdAt)')
       .addGroupBy('EXTRACT(MONTH FROM user.createdAt)')
@@ -31,18 +35,12 @@ export class DashboardService {
       .addOrderBy('EXTRACT(MONTH FROM user.createdAt)', 'ASC')
       .getRawMany();
 
-    const years = [...new Set(result.map((item) => +item.year))];
-
-    const data = result.map((item) => ({
-      month: item.month.trim(),
-      year: +item.year,
-      value: +item.value,
-    }));
+    const years = [...new Set(data.map((item) => +item.year))];
 
     return { years, data };
   }
 
-  async getAccountsByDomain(): Promise<{ domain: string; value: number }[]> {
+  async getAccountsByDomain() {
     const result = await this.accountRepository
       .createQueryBuilder('account')
       .select('account.domain', 'domain')
@@ -82,5 +80,27 @@ export class DashboardService {
     );
 
     return aggregatedResult;
+  }
+
+  async getQuantityUser() {
+    const quantityUser = await this.userRepository.count({
+      where: [{ role: Role.User }],
+      withDeleted: true,
+    });
+    return quantityUser;
+  }
+
+  async getQuantityAccount() {
+    const quantityAccount = await this.accountRepository.count({
+      withDeleted: true,
+    });
+    return quantityAccount;
+  }
+
+  async getQuantityWorkspace() {
+    const quantityWorkspace = await this.workspaceRepository.count({
+      withDeleted: true,
+    });
+    return quantityWorkspace;
   }
 }

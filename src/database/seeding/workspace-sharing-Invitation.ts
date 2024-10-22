@@ -15,7 +15,14 @@ export async function seedWorkspaceInvitations() {
     WorkspaceSharingInvitation,
   );
   const users = await userRepository.find();
-  const workspaces = await workspaceRepository.find();
+  const workspaces: Workspace[] = [];
+  for (const user of users) {
+    const workspace = await workspaceRepository.findOne({
+      where: { owner: { id: user.id } },
+      relations: ['owner'],
+    });
+    workspaces.push(workspace);
+  }
 
   for (const workspace of workspaces) {
     const randomUsers = users.sort(() => 0.5 - Math.random()).slice(0, 10);
@@ -24,7 +31,10 @@ export async function seedWorkspaceInvitations() {
       const invitation = invitationRepository.create({
         owner: workspace.owner,
         workspace: workspace,
-        email: faker.internet.email(),
+        email:
+          user.email !== workspace.owner.email
+            ? user.email
+            : faker.internet.email(),
         status: getRandomStatus(),
       });
 

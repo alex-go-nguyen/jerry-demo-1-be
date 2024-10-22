@@ -37,4 +37,9 @@ export const exceptionCase = {
     message: 'Invalid confirmation link!',
     errorCode: ErrorCode.INVALID_LINK_EMAIL_VERIFICATION,
   },
+  [ErrorCode.EMAIL_DEACTIVATED]: {
+    status: HttpStatus.FORBIDDEN,
+    message: 'Email has been deactivated!',
+    errorCode: ErrorCode.EMAIL_NO_AUTHENTICATED,
+  },
 };

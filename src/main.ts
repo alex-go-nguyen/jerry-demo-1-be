@@ -25,9 +25,8 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   app.enableCors({
-    origin: true,
+    origin: process.env.CLIENT_URLS.split(','),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept',
     credentials: true,
   });
   app.use(cookieParser());

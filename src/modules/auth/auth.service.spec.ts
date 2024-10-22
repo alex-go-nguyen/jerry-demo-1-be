@@ -518,7 +518,7 @@ describe('AuthService', () => {
         .mockResolvedValueOnce(accessToken)
         .mockResolvedValueOnce(refreshToken);
 
-      const result = await service.freshTokenService(email);
+      const result = await service.reFreshTokenService(email);
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
         where: { email },
       });
@@ -535,7 +535,7 @@ describe('AuthService', () => {
 
       jest.spyOn(mockUserRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.freshTokenService(email)).rejects.toThrow(
+      await expect(service.reFreshTokenService(email)).rejects.toThrow(
         ErrorCode.USER_NOT_FOUND,
       );
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
