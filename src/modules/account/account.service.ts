@@ -20,14 +20,6 @@ export class AccountService {
   ) {}
 
   async createAccountService(user, createAccountData: CreateAccountDto) {
-    if (
-      !createAccountData.domain ||
-      !createAccountData.username ||
-      !createAccountData.password
-    ) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
-
     const encryptedPassword = this.encryptionService.encryptPassword(
       createAccountData.password,
     );
@@ -39,8 +31,7 @@ export class AccountService {
       password: encryptedPassword,
     });
 
-    const savedAccount = await this.accountRepository.save(newAccount);
-    return savedAccount;
+    await this.accountRepository.save(newAccount);
   }
   async getAccountsByUserId(userId: string): Promise<Account[]> {
     const listAccounts = await this.accountRepository.find({
@@ -77,16 +68,6 @@ export class AccountService {
     accountId: string,
     updateAccountData: UpdateAccountDto,
   ) {
-    if (
-      !updateAccountData.domain ||
-      !updateAccountData.username ||
-      !updateAccountData.password ||
-      !userId ||
-      !accountId
-    ) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
-
     const existedAccount = await this.accountRepository.findOne({
       where: { id: accountId, user: { id: userId } },
       relations: ['user'],
@@ -107,10 +88,6 @@ export class AccountService {
     return updatedAccount;
   }
   async softRemove(userId: string, accountId: string) {
-    if (!userId || !accountId) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
-
     const existedAccount = await this.accountRepository.findOne({
       where: { id: accountId, user: { id: userId } },
       relations: ['user'],

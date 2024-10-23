@@ -1,8 +1,16 @@
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  NotFoundException,
+  HttpCode,
+} from '@nestjs/common';
 
-import { Role } from '@/common/enums';
+import { ErrorCode, Role } from '@/common/enums';
 
 import { AuthGuard } from '@/modules/auth/auth.guard';
 import { RolesGuard } from '@/modules/auth/roles.guard';
@@ -10,6 +18,8 @@ import { Roles } from '@/modules/auth/roles.decorator';
 
 import { SharingWorkspaceService } from './sharing-workspace.service';
 import { CreateSharingWorkspaceDto } from './dto/create-sharing-workspace.dto';
+import { ConfirmSharingWorkspaceDto } from './dto/confirm-sharing-workspace.dto';
+import { handleDataResponse } from '@/utils';
 
 @ApiTags('SharingWorkspace')
 @Controller('sharing-workspace')
@@ -24,17 +34,22 @@ export class SharingWorkspaceController {
   @ApiCreatedResponse({
     description: 'Invite to workspace successfully!',
   })
+  @HttpCode(200)
   async create(
     @Body() createSharingWorkspaceDto: CreateSharingWorkspaceDto,
     @Req() request: Request,
   ) {
     try {
       const user = request['user'];
-      return await this.sharingWorkspaceService.create(
+      await this.sharingWorkspaceService.create(
         user.id,
         createSharingWorkspaceDto,
       );
+      return handleDataResponse('Invite members successfully', 'OK');
     } catch (error) {
+      if (error.message === ErrorCode.WORKSPACE_NOT_FOUND) {
+        throw new NotFoundException(ErrorCode.WORKSPACE_NOT_FOUND);
+      }
       throw error;
     }
   }
@@ -43,11 +58,24 @@ export class SharingWorkspaceController {
   @ApiCreatedResponse({
     description: 'Invite to workspace successfully!',
   })
-  async confirm(@Body('inviteId') inviteId: string) {
+  @HttpCode(200)
+  async confirm(
+    @Body() confirmSharingWorkspaceData: ConfirmSharingWorkspaceDto,
+  ) {
     try {
-      return await this.sharingWorkspaceService.confirmInvitation(inviteId);
+      await this.sharingWorkspaceService.confirmInvitation(
+        confirmSharingWorkspaceData,
+      );
+      return handleDataResponse('Invitation accepted successfully', 'OK');
     } catch (error) {
-      throw error;
+      if (
+        error.message === ErrorCode.INVITATION_NOT_FOUND ||
+        error.message === ErrorCode.USER_NOT_FOUND
+      ) {
+        throw new NotFoundException(ErrorCode.INVITATION_NOT_FOUND);
+      } else {
+        throw error;
+      }
     }
   }
 }

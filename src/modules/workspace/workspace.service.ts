@@ -44,7 +44,7 @@ export class WorkspaceService {
       accounts,
     });
 
-    return await this.workspaceRepository.save(newWorkspace);
+    await this.workspaceRepository.save(newWorkspace);
   }
 
   async getWorkspacesByUserId(userId: string) {
@@ -77,10 +77,6 @@ export class WorkspaceService {
       userId,
       accounts: accountIds,
     } = updateWorkspaceDto;
-
-    if (!workspaceId || !name || !accountIds || accountIds.length === 0) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
 
     const owner = await this.userRepository.findOneBy({ id: userId });
     if (!owner) {

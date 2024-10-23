@@ -32,6 +32,7 @@ import { AuthGuard } from '@/modules/auth/auth.guard';
 import { RolesGuard } from '@/modules/auth/roles.guard';
 
 import { Roles } from '@/modules/auth/roles.decorator';
+import { handleDataResponse } from '@/utils';
 
 @ApiTags('Workspace')
 @Controller('workspaces')
@@ -45,7 +46,7 @@ export class WorkspaceController {
   @ApiCreatedResponse({
     description: 'Create workspace successfully!',
   })
-  create(
+  async create(
     @Body() createWorkspaceDto: CreateWorkspaceDto,
     @Req() request: Request,
   ) {
@@ -54,7 +55,8 @@ export class WorkspaceController {
     createWorkspaceDto.userId = user.id;
 
     try {
-      return this.workspaceService.create(createWorkspaceDto);
+      await this.workspaceService.create(createWorkspaceDto);
+      return handleDataResponse('Create workspace successfully', 'OK');
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -63,10 +65,11 @@ export class WorkspaceController {
   @Get('')
   @Roles(Role.User)
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
-  findAll(@Req() request: Request) {
+  async findAll(@Req() request: Request) {
     try {
       const user = request['user'];
-      return this.workspaceService.getWorkspacesByUserId(user.id);
+      await this.workspaceService.getWorkspacesByUserId(user.id);
+      return handleDataResponse('Create workspace successfully', 'OK');
     } catch (error) {
       throw error;
     }
@@ -75,7 +78,7 @@ export class WorkspaceController {
   @Put('update/:workspaceId')
   @Roles(Role.User)
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
-  update(
+  async update(
     @Param('workspaceId') workspaceId: string,
     @Body() updateWorkspaceDto: UpdateWorkspaceDto,
     @Req() request: Request,
@@ -86,7 +89,8 @@ export class WorkspaceController {
       updateWorkspaceDto.userId = user.id;
       updateWorkspaceDto.workspaceId = workspaceId;
 
-      return this.workspaceService.update(updateWorkspaceDto);
+      await this.workspaceService.update(updateWorkspaceDto);
+      return handleDataResponse('Update workspace successfully', 'OK');
     } catch (error) {
       throw error;
     }
@@ -102,7 +106,8 @@ export class WorkspaceController {
   ) {
     try {
       const user = request['user'];
-      return await this.workspaceService.softRemove(user.id, workspaceId);
+      await this.workspaceService.softRemove(user.id, workspaceId);
+      return handleDataResponse('Delete workspace successfully', 'OK');
     } catch (error) {
       throw error;
     }
@@ -114,7 +119,8 @@ export class WorkspaceController {
   @ApiOkResponse({ description: 'Restore workspace ok' })
   async restoreWorkspace(@Param('workspaceId') workspaceId: string) {
     try {
-      return await this.workspaceService.restore(workspaceId);
+      await this.workspaceService.restore(workspaceId);
+      return handleDataResponse('Restore workspace successfully', 'OK');
     } catch (error) {
       throw error;
     }

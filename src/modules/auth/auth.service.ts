@@ -35,14 +35,6 @@ export class AuthService {
   ) {}
 
   async registerService(userData: CreateUserDto) {
-    if (
-      userData.email === '' ||
-      userData.name === '' ||
-      userData.password === ''
-    ) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
-
     const existedUser = await this.userRepository.findOne({
       where: { email: userData.email },
       withDeleted: true,
@@ -82,19 +74,15 @@ export class AuthService {
     const existedUser = await this.userRepository.findOne({
       where: { id: confirmData.id },
     });
-    if (existedUser) {
+    if (existedUser && !existedUser.isAuthenticated) {
       existedUser.isAuthenticated = true;
       await this.userRepository.save(existedUser);
     } else {
-      throw new Error(ErrorCode.EMAIL_ALREADY_REGISTERED);
+      throw new Error(ErrorCode.INVALID_LINK_EMAIL_VERIFICATION);
     }
   }
 
   async loginService(userData: LoginUserDto) {
-    if (userData.email === '' || userData.password === '') {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
-
     const existedUser = await this.userRepository.findOne({
       where: { email: userData.email },
       withDeleted: true,
@@ -143,9 +131,6 @@ export class AuthService {
   }
 
   async forgotPasswordService(forgotPasswordData: ForgotPasswordDto) {
-    if (forgotPasswordData.email === '') {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     const existedUser = await this.userRepository.findOne({
       where: { email: forgotPasswordData.email },
     });
@@ -175,9 +160,6 @@ export class AuthService {
   }
 
   async verifyOTPService(verifyOtpData: VerifyOtpDto) {
-    if (verifyOtpData.otp === '') {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     const storedOTP = this.cache.get(`otp:${verifyOtpData.email}`);
     if (!storedOTP || storedOTP !== verifyOtpData.otp) {
       throw new Error(ErrorCode.OTP_INVALID);
@@ -185,9 +167,6 @@ export class AuthService {
   }
 
   async resetPasswordService(userData: LoginUserDto) {
-    if (userData.email === '') {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     const existedUser = await this.userRepository.findOne({
       where: { email: userData.email },
     });
@@ -214,12 +193,6 @@ export class AuthService {
   }
 
   async changePassword(userId: string, changePasswordData: ChangePasswordDto) {
-    if (
-      changePasswordData.currentPassword === '' ||
-      changePasswordData.newPassword === ''
-    ) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     const existedUser = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -246,18 +219,12 @@ export class AuthService {
   }
 
   async verifyTokenService(token: string) {
-    if (!token) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     return await this.jwtService.verifyAsync(token, {
       secret: this.configService.get<string>('JWT_SECRET'),
     });
   }
 
   async reFreshTokenService(email: string) {
-    if (email === '') {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     const existedUser = await this.userRepository.findOne({
       where: { email },
     });

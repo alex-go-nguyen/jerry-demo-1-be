@@ -42,4 +42,9 @@ export const exceptionCase = {
     message: 'Email has been deactivated!',
     errorCode: ErrorCode.EMAIL_NO_AUTHENTICATED,
   },
+  [ErrorCode.INVITATION_NOT_FOUND]: {
+    status: HttpStatus.NOT_FOUND,
+    message: 'Invitation is not found',
+    errorCode: ErrorCode.INVITATION_NOT_FOUND,
+  },
 };
