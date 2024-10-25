@@ -52,23 +52,14 @@ export class AuthController {
   })
   @ApiConflictResponse({ description: 'Email is already registered!' })
   @ApiBadRequestResponse({ description: 'Missing input!' })
-  async register(
-    @Body() userData: CreateUserDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async register(@Body() userData: CreateUserDto) {
     try {
       await this.authService.registerService(userData);
-      response
-        .status(HttpStatus.OK)
-        .json(
-          handleDataResponse(
-            'Register successfully! Check and confirm your email',
-          ),
-        );
+      return handleDataResponse(
+        'Register successfully! Check and confirm your email',
+      );
     } catch (error) {
-      if (error.message === ErrorCode.MISSING_INPUT) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
-      } else if (error.message === ErrorCode.EMAIL_ALREADY_REGISTERED) {
+      if (error.message === ErrorCode.EMAIL_ALREADY_REGISTERED) {
         throw new ConflictException(ErrorCode.EMAIL_ALREADY_REGISTERED);
       } else {
         throw error;
@@ -81,18 +72,13 @@ export class AuthController {
     description: 'Confirm email successfully!!.',
   })
   @ApiBadRequestResponse({ description: 'Missing input!' })
-  async confirm(
-    @Body() confirmData: ConfirmEmailDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async confirm(@Body() confirmData: ConfirmEmailDto) {
     try {
       await this.authService.confirmEmailService(confirmData);
-      response
-        .status(HttpStatus.OK)
-        .json(handleDataResponse('Confirm email successfully!!'));
+      return handleDataResponse('Confirm email successfully!!');
     } catch (error) {
-      if (error.message === ErrorCode.MISSING_INPUT) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      if (error.message === ErrorCode.EMAIL_ALREADY_REGISTERED) {
+        throw new BadRequestException(ErrorCode.EMAIL_ALREADY_REGISTERED);
       } else {
         throw error;
       }
@@ -136,9 +122,7 @@ export class AuthController {
           currentUser: { ...resultData.currentUser },
         });
     } catch (error) {
-      if (error.message === ErrorCode.MISSING_INPUT) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
-      } else if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
+      if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
         throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);
       } else if (error.message === ErrorCode.INCORRECT_PASSWORD) {
         throw new BadRequestException(ErrorCode.INCORRECT_PASSWORD);
@@ -166,21 +150,15 @@ export class AuthController {
   @ApiOkResponse({ description: 'Please check your email to confirm forget' })
   @ApiNotFoundResponse({ description: 'Email is not registered!' })
   @ApiBadRequestResponse({ description: 'Missing input!' })
-  async forgotPassword(
-    @Body() forgotPasswordData: ForgotPasswordDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async forgotPassword(@Body() forgotPasswordData: ForgotPasswordDto) {
     try {
       await this.authService.forgotPasswordService(forgotPasswordData);
-      response
-        .status(HttpStatus.OK)
-        .json(
-          handleDataResponse('Please check your email to confirm forget', 'OK'),
-        );
+      return handleDataResponse(
+        'Please check your email to confirm forget',
+        'OK',
+      );
     } catch (error) {
-      if (error.message === ErrorCode.MISSING_INPUT) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
-      } else if (error.message === ErrorCode.USER_NOT_FOUND) {
+      if (error.message === ErrorCode.USER_NOT_FOUND) {
         throw new NotFoundException(ErrorCode.USER_NOT_FOUND);
       } else {
         throw error;
@@ -207,9 +185,7 @@ export class AuthController {
       await this.authService.changePassword(user.id, changePasswordData);
       return handleDataResponse('Change password successfully', 'OK');
     } catch (error) {
-      if (error.message === ErrorCode.MISSING_INPUT) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
-      } else if (error.message === ErrorCode.USER_NOT_FOUND) {
+      if (error.message === ErrorCode.USER_NOT_FOUND) {
         throw new NotFoundException(ErrorCode.USER_NOT_FOUND);
       } else if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
         throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);
@@ -227,19 +203,12 @@ export class AuthController {
   @ApiOkResponse({ description: 'OTP is verified' })
   @ApiBadRequestResponse({ description: 'OTP is expired or invalid!' })
   @ApiBadRequestResponse({ description: 'Missing input!' })
-  async verifyOTP(
-    @Body() otpData: VerifyOtpDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async verifyOTP(@Body() otpData: VerifyOtpDto) {
     try {
       await this.authService.verifyOTPService(otpData);
-      response
-        .status(HttpStatus.OK)
-        .json(handleDataResponse('OTP is verified', 'OK'));
+      return handleDataResponse('OTP is verified', 'OK');
     } catch (error) {
-      if (error.message === ErrorCode.MISSING_INPUT) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
-      } else if (error.message === ErrorCode.OTP_INVALID) {
+      if (error.message === ErrorCode.OTP_INVALID) {
         throw new BadRequestException(ErrorCode.OTP_INVALID);
       } else {
         throw error;
@@ -250,19 +219,12 @@ export class AuthController {
   @Post('reset-password')
   @ApiConflictResponse({ description: 'Email has not been confirmed!' })
   @ApiBadRequestResponse({ description: 'Missing input!' })
-  async resetPassword(
-    @Body() userData: LoginUserDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async resetPassword(@Body() userData: LoginUserDto) {
     try {
       await this.authService.resetPasswordService(userData);
-      response
-        .status(HttpStatus.OK)
-        .json(handleDataResponse('Reset password successfully', 'OK'));
+      return handleDataResponse('Reset password successfully', 'OK');
     } catch (error) {
-      if (error.message === ErrorCode.MISSING_INPUT) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
-      } else if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
+      if (error.message === ErrorCode.EMAIL_NO_AUTHENTICATED) {
         throw new ConflictException(ErrorCode.EMAIL_NO_AUTHENTICATED);
       } else {
         throw error;
@@ -280,11 +242,7 @@ export class AuthController {
       );
       return resultTokens;
     } catch (error) {
-      if (error.message === ErrorCode.MISSING_INPUT) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
-      } else {
-        throw error;
-      }
+      throw error;
     }
   }
 }

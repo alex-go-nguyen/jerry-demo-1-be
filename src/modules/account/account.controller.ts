@@ -3,8 +3,6 @@ import {
   Post,
   Body,
   Req,
-  Res,
-  HttpStatus,
   BadRequestException,
   UseGuards,
   Get,
@@ -16,7 +14,7 @@ import {
 
 import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { Response, Request } from 'express';
+import { Request } from 'express';
 
 import { ErrorCode } from '@/common/enums';
 
@@ -48,17 +46,12 @@ export class AccountController {
   async storeAccount(
     @Body() createAccountDto: CreateAccountDto,
     @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
   ) {
     try {
       const user = request['user'];
-      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { createdAt, updatedAt, ...account } =
-        await this.accountService.createAccountService(user, createAccountDto);
-      response.status(HttpStatus.OK).json({
-        ...handleDataResponse('Store account successfully!'),
-        account,
-      });
+
+      await this.accountService.createAccountService(user, createAccountDto);
+      return handleDataResponse('Store account successfully!', 'OK');
     } catch (error) {
       if (error.message === ErrorCode.MISSING_INPUT) {
         throw new BadRequestException(ErrorCode.MISSING_INPUT);
@@ -119,11 +112,12 @@ export class AccountController {
   ) {
     try {
       const user = request['user'];
-      return await this.accountService.updateAccount(
+      await this.accountService.updateAccount(
         user.id,
         accountId,
         updateAccountData,
       );
+      return handleDataResponse('Update account successfully', 'OK');
     } catch (error) {
       throw error;
     }
@@ -140,7 +134,8 @@ export class AccountController {
   ) {
     try {
       const user = request['user'];
-      return await this.accountService.softRemove(user.id, accountId);
+      await this.accountService.softRemove(user.id, accountId);
+      return handleDataResponse('Delete account successfully', 'OK');
     } catch (error) {
       throw error;
     }

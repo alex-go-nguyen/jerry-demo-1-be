@@ -14,6 +14,7 @@ import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 import { WorkspaceSharingInvitation } from './entities/sharing-workspace.entity';
 
 import { CreateSharingWorkspaceDto } from './dto/create-sharing-workspace.dto';
+import { ConfirmSharingWorkspaceDto } from './dto/confirm-sharing-workspace.dto';
 
 @Injectable()
 export class SharingWorkspaceService {
@@ -56,8 +57,9 @@ export class SharingWorkspaceService {
         status: 'PENDING',
       });
 
-      const confirmationUrl = `${this.configService.get<string>('WEB_CLIENT_URL')}/confirm-invitation/${invitation.id}`;
-
+      const invitationSaved =
+        await this.workspaceSharingInvitationRepository.save(invitation);
+      const confirmationUrl = `${this.configService.get<string>('WEB_CLIENT_URL')}/confirm-invitation/${invitationSaved?.id}`;
       await this.mailerService.sendMail({
         to: email,
         from: 'support@yourapp.com',
@@ -69,12 +71,13 @@ export class SharingWorkspaceService {
           url: confirmationUrl,
         },
       });
-      return await this.workspaceSharingInvitationRepository.save(invitation);
     }
   }
-  async confirmInvitation(inviteId: string) {
+  async confirmInvitation(
+    confirmSharingWorkspaceData: ConfirmSharingWorkspaceDto,
+  ) {
     const invitation = await this.workspaceSharingInvitationRepository.findOne({
-      where: { id: inviteId },
+      where: { id: confirmSharingWorkspaceData.inviteId },
       relations: ['workspace'],
     });
 
@@ -90,6 +93,10 @@ export class SharingWorkspaceService {
       throw new Error(ErrorCode.USER_NOT_FOUND);
     }
 
+    if (invitation.status === 'ACCEPTED') {
+      throw new Error(ErrorCode.INVALID_LINK_EMAIL_VERIFICATION);
+    }
+
     invitation.status = 'ACCEPTED';
     await this.workspaceSharingInvitationRepository.save(invitation);
 
@@ -102,7 +109,5 @@ export class SharingWorkspaceService {
       workspace.members.push(user);
       await this.workspaceRepository.save(workspace);
     }
-
-    return { message: 'Invitation accepted successfully' };
   }
 }

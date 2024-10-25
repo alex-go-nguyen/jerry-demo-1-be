@@ -48,9 +48,6 @@ export class UsersService {
     };
   }
   async updateProfile(profileData: UpdateUserDto) {
-    if (profileData.email === '' || profileData.name === '') {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     const existedUser = await this.userRepository.findOne({
       where: { email: profileData.email },
     });
@@ -83,9 +80,6 @@ export class UsersService {
   }
 
   async deactivateUser(userId: string) {
-    if (userId === '') {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     const existedUser = await this.userRepository.findOne({
       where: { id: userId },
     });

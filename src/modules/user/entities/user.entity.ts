@@ -8,7 +8,6 @@ import {
   UpdateDateColumn,
   OneToMany,
   ManyToMany,
-  JoinTable,
   DeleteDateColumn,
 } from 'typeorm';
 import { Account } from '@/modules/account/entities/account.entity';
@@ -55,7 +54,6 @@ export class User {
   accounts: Account[];
 
   @ManyToMany(() => Workspace, (workspace) => workspace.members)
-  @JoinTable()
   @ApiProperty()
   workspaces: Workspace[];
 
