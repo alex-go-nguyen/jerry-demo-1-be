@@ -68,8 +68,7 @@ export class WorkspaceController {
   async findAll(@Req() request: Request) {
     try {
       const user = request['user'];
-      await this.workspaceService.getWorkspacesByUserId(user.id);
-      return handleDataResponse('Create workspace successfully', 'OK');
+      return await this.workspaceService.getWorkspacesByUserId(user.id);
     } catch (error) {
       throw error;
     }

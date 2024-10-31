@@ -73,10 +73,20 @@ export class UsersService {
     }
   }
   async findById(userId: string) {
-    return await this.userRepository.findOne({
+    const existedUser = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'name', 'email', 'avatar', 'role', 'phoneNumber'],
+      relations: ['userTwoFa'],
     });
+    const { id, name, role, email, avatar, phoneNumber } = existedUser;
+    return {
+      id,
+      name,
+      role,
+      email,
+      avatar,
+      status: existedUser.userTwoFa.status,
+      phoneNumber,
+    };
   }
 
   async deactivateUser(userId: string) {

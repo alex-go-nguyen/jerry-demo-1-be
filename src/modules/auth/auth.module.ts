@@ -7,14 +7,19 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { LRUCache } from 'lru-cache';
 
+import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
+
+import { TwoFactorAuthModule } from '@/modules/user-twofa/user-twofa.module';
+
 import { User } from '@/modules/user/entities/user.entity';
+import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, UserTwoFa]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -23,9 +28,11 @@ import { AuthController } from './auth.controller';
         secret: configService.get<string>('JWT_SECRET'),
       }),
     }),
+    TwoFactorAuthModule,
   ],
   providers: [
     AuthService,
+    UserTwoFaService,
     {
       provide: LRUCache,
       useFactory: () => {

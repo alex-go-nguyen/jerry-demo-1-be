@@ -34,14 +34,14 @@ export class AccountService {
     await this.accountRepository.save(newAccount);
   }
   async getAccountsByUserId(userId: string): Promise<Account[]> {
-    const listAccounts = await this.accountRepository.find({
-      where: { user: { id: userId } },
-      relations: ['user'],
-      select: {
-        user: { id: true },
-      },
-    });
-    return listAccounts;
+    return this.accountRepository
+      .createQueryBuilder('account')
+      .leftJoinAndSelect('account.user', 'user')
+      .leftJoin('account.workspaces', 'workspace')
+      .leftJoinAndSelect('workspace.members', 'member')
+      .where('user.id = :userId', { userId })
+      .orWhere('member.id = :userId', { userId })
+      .getMany();
   }
 
   async getAccountByUserIdAndAccountId(
