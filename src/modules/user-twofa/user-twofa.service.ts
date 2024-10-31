@@ -9,7 +9,8 @@ import { VerifyTotpDto } from './dtos/verify-totp-dto';
 export class UserTwoFaService {
   constructor() {}
   async generateQr() {
-    const secret = speakeasy.generateSecret({ length: 20 });
+    const SECRET_LENGTH = 20;
+    const secret = speakeasy.generateSecret({ length: SECRET_LENGTH });
     if (!secret.otpauth_url) {
       throw new Error('Failed to generate OTP Auth URL.');
     }

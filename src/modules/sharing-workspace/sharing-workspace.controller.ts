@@ -16,10 +16,10 @@ import { AuthGuard } from '@/modules/auth/auth.guard';
 import { RolesGuard } from '@/modules/auth/roles.guard';
 import { Roles } from '@/modules/auth/roles.decorator';
 
-import { SharingWorkspaceService } from './sharing-workspace.service';
-import { CreateSharingWorkspaceDto } from './dto/create-sharing-workspace.dto';
-import { ConfirmSharingWorkspaceDto } from './dto/confirm-sharing-workspace.dto';
 import { handleDataResponse } from '@/utils';
+
+import { SharingWorkspaceService } from './sharing-workspace.service';
+import { CreateSharingWorkspaceDto, ConfirmSharingWorkspaceDto } from './dtos';
 
 @ApiTags('SharingWorkspace')
 @Controller('sharing-workspace')

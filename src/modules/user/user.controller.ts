@@ -96,6 +96,6 @@ export class UsersController {
   @Get('/currentUser')
   @Roles(Role.Admin, Role.User)
   async me(@currentUser() user: User) {
-    return await this.usersService.findById(user.id);
+    return this.usersService.findById(user.id);
   }
 }

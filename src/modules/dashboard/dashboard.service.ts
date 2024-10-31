@@ -9,6 +9,8 @@ import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
+import { tableNames } from '@/utils/constants';
+
 @Injectable()
 export class DashboardService {
   constructor(
@@ -22,7 +24,7 @@ export class DashboardService {
 
   async getUserRegistrations() {
     const data = await this.userRepository
-      .createQueryBuilder('user')
+      .createQueryBuilder(tableNames.user)
       .select("TO_CHAR(user.createdAt, 'Month') as month")
       .addSelect('CAST(EXTRACT(YEAR FROM user.createdAt) AS INTEGER) as year')
       .addSelect('CAST(COUNT(user.id) AS INTEGER) as value')
@@ -42,7 +44,7 @@ export class DashboardService {
 
   async getAccountsByDomain() {
     const result = await this.accountRepository
-      .createQueryBuilder('account')
+      .createQueryBuilder(tableNames.account)
       .select('account.domain', 'domain')
       .addSelect('COUNT(account.id)', 'value')
       .groupBy('account.domain')

@@ -10,10 +10,6 @@ export class UserTwoFaController {
   @HttpCode(200)
   @ApiOkResponse({ description: 'token' })
   async generateQr() {
-    try {
-      return await this.twoFactorAuthService.generateQr();
-    } catch (error) {
-      throw error;
-    }
+    return await this.twoFactorAuthService.generateQr();
   }
 }

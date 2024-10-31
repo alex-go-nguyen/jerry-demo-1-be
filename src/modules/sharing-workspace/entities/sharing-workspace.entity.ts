@@ -9,6 +9,7 @@ import {
 
 import { User } from '@/modules/user/entities/user.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
+import { statusInvitationWorkspace } from '@/common/enums';
 
 @Entity()
 export class WorkspaceSharingInvitation {
@@ -24,7 +25,11 @@ export class WorkspaceSharingInvitation {
   @Column()
   email: string;
 
-  @Column({ default: 'PENDING' })
+  @Column({
+    type: 'enum',
+    enum: statusInvitationWorkspace,
+    default: statusInvitationWorkspace.PENDING,
+  })
   status: string;
 
   @CreateDateColumn()

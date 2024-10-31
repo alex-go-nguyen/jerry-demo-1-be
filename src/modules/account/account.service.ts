@@ -7,6 +7,8 @@ import { ErrorCode } from '@/common/enums';
 
 import { EncryptionService } from '@/encryption/encryption.service';
 
+import { tableNames, tableRelations } from '@/utils/constants';
+
 import { Account } from './entities/account.entity';
 
 import { CreateAccountDto, UpdateAccountDto } from './dto';
@@ -35,7 +37,7 @@ export class AccountService {
   }
   async getAccountsByUserId(userId: string): Promise<Account[]> {
     return this.accountRepository
-      .createQueryBuilder('account')
+      .createQueryBuilder(tableNames.account)
       .leftJoinAndSelect('account.user', 'user')
       .leftJoin('account.workspaces', 'workspace')
       .leftJoinAndSelect('workspace.members', 'member')
@@ -50,7 +52,7 @@ export class AccountService {
   ): Promise<Account> {
     const account = await this.accountRepository.findOne({
       where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
+      relations: [tableRelations.user],
       select: {
         user: { id: true },
       },
@@ -70,7 +72,7 @@ export class AccountService {
   ) {
     const existedAccount = await this.accountRepository.findOne({
       where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
+      relations: [tableRelations.user],
       select: {
         user: { id: true },
       },
@@ -90,7 +92,7 @@ export class AccountService {
   async softRemove(userId: string, accountId: string) {
     const existedAccount = await this.accountRepository.findOne({
       where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
+      relations: [tableRelations.user],
       select: {
         user: { id: true },
       },

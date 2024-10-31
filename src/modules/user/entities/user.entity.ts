@@ -47,6 +47,8 @@ export class User {
   isAuthenticated: boolean;
 
   @Column({
+    type: 'enum',
+    enum: Role,
     default: Role.User,
   })
   @ApiProperty()

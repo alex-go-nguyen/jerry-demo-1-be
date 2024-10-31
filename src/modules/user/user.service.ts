@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import { tableNames, tableRelations } from '@/utils/constants';
 import { ErrorCode, Role } from '@/common/enums';
 
 import { User } from './entities/user.entity';
@@ -17,7 +18,7 @@ export class UsersService {
   async getUsers(page: number, limit: number) {
     const skip = (page - 1) * limit;
     const data = await this.userRepository
-      .createQueryBuilder('user')
+      .createQueryBuilder(tableNames.user)
       .leftJoin('user.accounts', 'accounts')
       .select([
         'user.id AS id',
@@ -36,7 +37,7 @@ export class UsersService {
       .getRawMany();
 
     const totalCount = await this.userRepository
-      .createQueryBuilder('user')
+      .createQueryBuilder(tableNames.user)
       .where('user.role = :role', { role: Role.User })
       .getCount();
 
@@ -75,16 +76,24 @@ export class UsersService {
   async findById(userId: string) {
     const existedUser = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['userTwoFa'],
+      relations: [tableRelations.userTwoFa],
     });
-    const { id, name, role, email, avatar, phoneNumber } = existedUser;
+    const {
+      id,
+      name,
+      role,
+      email,
+      avatar,
+      phoneNumber,
+      userTwoFa: { status },
+    } = existedUser;
     return {
       id,
       name,
       role,
       email,
       avatar,
-      status: existedUser.userTwoFa.status,
+      status,
       phoneNumber,
     };
   }

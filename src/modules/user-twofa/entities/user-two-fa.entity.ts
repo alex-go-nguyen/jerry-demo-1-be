@@ -26,6 +26,10 @@ export class UserTwoFa {
   secret: string;
 
   @ApiProperty()
-  @Column({ default: StatusTwoFa.NOT_REGISTERED })
+  @Column({
+    type: 'enum',
+    enum: StatusTwoFa,
+    default: StatusTwoFa.NOT_REGISTERED,
+  })
   status: string;
 }

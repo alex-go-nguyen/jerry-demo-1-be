@@ -12,6 +12,7 @@ import { Workspace } from './entities/workspace.entity';
 
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
+import { tableNames, tableRelations } from '@/utils/constants';
 
 @Injectable()
 export class WorkspaceService {
@@ -49,7 +50,7 @@ export class WorkspaceService {
 
   async getWorkspacesByUserId(userId: string) {
     return await this.workspaceRepository
-      .createQueryBuilder('workspace')
+      .createQueryBuilder(tableNames.workspace)
       .leftJoinAndSelect('workspace.owner', 'owner')
       .leftJoinAndSelect('workspace.members', 'members')
       .leftJoinAndSelect('workspace.accounts', 'accounts')
@@ -88,7 +89,7 @@ export class WorkspaceService {
         id: workspaceId,
         owner: { id: userId },
       },
-      relations: ['owner', 'accounts'],
+      relations: [tableRelations.owner, tableRelations.accounts],
     });
 
     if (!existedWorkspace) {
@@ -111,7 +112,7 @@ export class WorkspaceService {
         id: workspaceId,
         owner: { id: ownerId },
       },
-      relations: ['owner'],
+      relations: [tableRelations.owner],
     });
 
     if (!workspace) {

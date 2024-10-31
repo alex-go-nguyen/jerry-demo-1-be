@@ -24,10 +24,12 @@ import {
   ConfirmEmailDto,
   ForgotPasswordDto,
   ChangePasswordDto,
-} from '@/modules/user/dtos/';
+} from '@/modules/user/dtos';
+import { ILoginResult, ILoginResultWithTokens } from '@/interfaces';
+
+import { envKeys, tableRelations } from '@/utils/constants';
 
 import { VerifyOtpDto, VerifyTotpDto } from './dtos';
-import { ILoginResult, ILoginResultWithTokens } from '@/interfaces';
 
 @Injectable()
 export class AuthService {
@@ -72,11 +74,11 @@ export class AuthService {
     });
     await this.userTwoFaRepository.save(userTwoFa);
 
-    const url = `${this.configService.get<string>('WEB_CLIENT_URL')}/confirm-email/${saveUser.id}`;
+    const url = `${this.configService.get<string>(envKeys.WEB_CLIENT_URL)}/confirm-email/${saveUser.id}`;
 
     await this.mailerService.sendMail({
       to: saveUser.email,
-      from: 'Anh bao',
+      from: envKeys.EMAIL_SENDER,
       subject: 'Verify email',
       template: 'verification_email',
       context: {
@@ -101,7 +103,7 @@ export class AuthService {
     const existedUser = await this.userRepository.findOne({
       where: { email: userData.email },
       withDeleted: true,
-      relations: ['userTwoFa'],
+      relations: [tableRelations.userTwoFa],
     });
 
     if (!existedUser) {
@@ -134,7 +136,7 @@ export class AuthService {
   ): Promise<ILoginResultWithTokens> {
     const existedUser = await this.userRepository.findOne({
       where: { id: veriyTotpData.userId },
-      relations: ['userTwoFa'],
+      relations: [tableRelations.userTwoFa],
     });
     const verifiedTotp = await this.userTwoFaService.verifyTotp({
       secret: existedUser.userTwoFa.secret,
@@ -150,7 +152,7 @@ export class AuthService {
   async enableTwoFa(userId: string) {
     const existedUserTwoFa = await this.userTwoFaRepository.findOne({
       where: { user: { id: userId } },
-      relations: ['user'],
+      relations: [tableRelations.user],
     });
     this.checkExistedUser(existedUserTwoFa.user);
     existedUserTwoFa.status = StatusTwoFa.ENABLED;
@@ -177,7 +179,7 @@ export class AuthService {
 
     await this.mailerService.sendMail({
       to: forgotPasswordData.email,
-      from: 'Anh bao',
+      from: envKeys.EMAIL_SENDER,
       subject: 'Forgot password',
       template: 'password_reset_request',
       context: {
@@ -247,7 +249,7 @@ export class AuthService {
 
   async verifyTokenService(token: string) {
     return await this.jwtService.verifyAsync(token, {
-      secret: this.configService.get<string>('JWT_SECRET'),
+      secret: this.configService.get<string>(envKeys.JWT_SECRET),
     });
   }
 
@@ -260,8 +262,8 @@ export class AuthService {
     }
 
     const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
-      this.generateToken(existedUser, '1h'),
-      this.generateToken(existedUser, '1d'),
+      this.generateToken(existedUser, envKeys.ACCESS_TOKEN_EXPIRATION),
+      this.generateToken(existedUser, envKeys.REFRESH_TOKEN_EXPIRATION),
     ]);
 
     if (
@@ -340,16 +342,11 @@ export class AuthService {
   }
 
   private handleTwoFaStatus(user: User) {
-    if (!user.userTwoFa.secret) {
-      return {
-        userId: user.id,
-        statusTwoFa: StatusEnableTwoFa.TWO_FA_ENABLED_NO_SECRET,
-      };
-    } else {
-      return {
-        userId: user.id,
-        statusTwoFa: StatusEnableTwoFa.TWO_FA_ENABLED_WITH_SECRET,
-      };
-    }
+    return {
+      userId: user.id,
+      statusTwoFa: user.userTwoFa.secret
+        ? StatusEnableTwoFa.TWO_FA_ENABLED_WITH_SECRET
+        : StatusEnableTwoFa.TWO_FA_ENABLED_NO_SECRET,
+    };
   }
 }
