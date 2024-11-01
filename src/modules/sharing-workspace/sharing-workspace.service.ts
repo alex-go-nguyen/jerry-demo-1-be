@@ -6,15 +6,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 
-import { ErrorCode } from '@/common/enums';
+import { ErrorCode, statusInvitationWorkspace } from '@/common/enums';
 
 import { User } from '@/modules/user/entities/user.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
+import { envKeys } from '@/utils/constants';
+
 import { WorkspaceSharingInvitation } from './entities/sharing-workspace.entity';
 
-import { CreateSharingWorkspaceDto } from './dto/create-sharing-workspace.dto';
-import { ConfirmSharingWorkspaceDto } from './dto/confirm-sharing-workspace.dto';
+import { CreateSharingWorkspaceDto, ConfirmSharingWorkspaceDto } from './dtos';
 
 @Injectable()
 export class SharingWorkspaceService {
@@ -54,15 +55,15 @@ export class SharingWorkspaceService {
         owner: workspace.owner,
         workspace: workspace,
         email: email,
-        status: 'PENDING',
+        status: statusInvitationWorkspace.PENDING,
       });
 
       const invitationSaved =
         await this.workspaceSharingInvitationRepository.save(invitation);
-      const confirmationUrl = `${this.configService.get<string>('WEB_CLIENT_URL')}/confirm-invitation/${invitationSaved?.id}`;
+      const confirmationUrl = `${this.configService.get<string>(envKeys.WEB_CLIENT_URL)}/confirm-invitation/${invitationSaved?.id}`;
       await this.mailerService.sendMail({
         to: email,
-        from: 'support@yourapp.com',
+        from: envKeys.EMAIL_SENDER,
         subject: 'Workspace Invitation',
         template: 'invitation_email',
         context: {
@@ -93,11 +94,11 @@ export class SharingWorkspaceService {
       throw new Error(ErrorCode.USER_NOT_FOUND);
     }
 
-    if (invitation.status === 'ACCEPTED') {
+    if (invitation.status === statusInvitationWorkspace.ACCEPTED) {
       throw new Error(ErrorCode.INVALID_LINK_EMAIL_VERIFICATION);
     }
 
-    invitation.status = 'ACCEPTED';
+    invitation.status = statusInvitationWorkspace.ACCEPTED;
     await this.workspaceSharingInvitationRepository.save(invitation);
 
     const workspace = await this.workspaceRepository.findOne({

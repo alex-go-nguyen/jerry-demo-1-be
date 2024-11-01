@@ -7,6 +7,8 @@ import { ErrorCode } from '@/common/enums';
 
 import { EncryptionService } from '@/encryption/encryption.service';
 
+import { TABLES } from '@/utils/constants';
+
 import { Account } from './entities/account.entity';
 
 import { CreateAccountDto, UpdateAccountDto } from './dto';
@@ -34,14 +36,14 @@ export class AccountService {
     await this.accountRepository.save(newAccount);
   }
   async getAccountsByUserId(userId: string): Promise<Account[]> {
-    const listAccounts = await this.accountRepository.find({
-      where: { user: { id: userId } },
-      relations: ['user'],
-      select: {
-        user: { id: true },
-      },
-    });
-    return listAccounts;
+    return this.accountRepository
+      .createQueryBuilder(TABLES.account)
+      .leftJoinAndSelect('account.user', 'user')
+      .leftJoin('account.workspaces', 'workspace')
+      .leftJoinAndSelect('workspace.members', 'member')
+      .where('user.id = :userId', { userId })
+      .orWhere('member.id = :userId', { userId })
+      .getMany();
   }
 
   async getAccountByUserIdAndAccountId(

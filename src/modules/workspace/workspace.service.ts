@@ -8,6 +8,8 @@ import { ErrorCode } from '@/common/enums';
 import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
 
+import { TABLES } from '@/utils/constants';
+
 import { Workspace } from './entities/workspace.entity';
 
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
@@ -49,7 +51,7 @@ export class WorkspaceService {
 
   async getWorkspacesByUserId(userId: string) {
     return await this.workspaceRepository
-      .createQueryBuilder('workspace')
+      .createQueryBuilder(TABLES.workspace)
       .leftJoinAndSelect('workspace.owner', 'owner')
       .leftJoinAndSelect('workspace.members', 'members')
       .leftJoinAndSelect('workspace.accounts', 'accounts')

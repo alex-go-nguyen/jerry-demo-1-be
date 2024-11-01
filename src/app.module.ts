@@ -23,6 +23,8 @@ import { WorkspaceModule } from '@/modules/workspace/workspace.module';
 
 import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-workspace.module';
 
+import { TwoFactorAuthModule } from '@/modules/user-twofa/user-twofa.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,11 +34,13 @@ import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-work
       transport: {
         host: process.env.EMAIL_HOST,
         port: +process.env.EMAIL_PORT,
-        ignoreTLS: true,
         secure: false,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS,
+        },
+        tls: {
+          rejectUnauthorized: false,
         },
       },
       defaults: {
@@ -63,6 +67,7 @@ import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-work
     DashboardModule,
     WorkspaceModule,
     SharingWorkspaceModule,
+    TwoFactorAuthModule,
   ],
 
   providers: [

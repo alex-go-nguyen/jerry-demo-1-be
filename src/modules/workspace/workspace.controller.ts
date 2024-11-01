@@ -66,13 +66,8 @@ export class WorkspaceController {
   @Roles(Role.User)
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
   async findAll(@Req() request: Request) {
-    try {
-      const user = request['user'];
-      await this.workspaceService.getWorkspacesByUserId(user.id);
-      return handleDataResponse('Create workspace successfully', 'OK');
-    } catch (error) {
-      throw error;
-    }
+    const user = request['user'];
+    return this.workspaceService.getWorkspacesByUserId(user.id);
   }
 
   @Put('update/:workspaceId')

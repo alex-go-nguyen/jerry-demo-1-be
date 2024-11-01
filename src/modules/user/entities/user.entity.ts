@@ -9,9 +9,12 @@ import {
   OneToMany,
   ManyToMany,
   DeleteDateColumn,
+  OneToOne,
 } from 'typeorm';
+
 import { Account } from '@/modules/account/entities/account.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
+import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
 @Entity()
 export class User {
@@ -44,10 +47,15 @@ export class User {
   isAuthenticated: boolean;
 
   @Column({
+    type: 'enum',
+    enum: Role,
     default: Role.User,
   })
   @ApiProperty()
   role: string;
+
+  @OneToOne(() => UserTwoFa, (userTwoFa) => userTwoFa.user)
+  userTwoFa: UserTwoFa;
 
   @OneToMany(() => Account, (account) => account.user)
   @ApiProperty({ type: () => [Account] })

@@ -11,23 +11,37 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { MailerService } from '@nestjs-modules/mailer';
 
-import { ErrorCode } from '@/common/enums';
+import { ErrorCode, StatusEnableTwoFa, StatusTwoFa } from '@/common/enums';
+
+import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
 
 import { User } from '@/modules/user/entities/user.entity';
+import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
-import { LoginUserDto } from '@/modules/user/dtos/login-user.dto';
-import { CreateUserDto } from '@/modules/user/dtos/create-user.dto';
-import { ConfirmEmailDto } from '@/modules/user/dtos/confirm-email.dto';
-import { ForgotPasswordDto } from '@/modules/user/dtos/forgot-password.dto';
-import { ChangePasswordDto } from '@/modules/user/dtos/change-password.dto';
+import {
+  CreateUserDto,
+  LoginUserDto,
+  ConfirmEmailDto,
+  ForgotPasswordDto,
+  ChangePasswordDto,
+} from '@/modules/user/dtos';
+import { ILoginResult, ILoginResultWithTokens } from '@/interfaces';
 
-import { VerifyOtpDto } from './dtos/verity-otp.dto';
+import { envKeys } from '@/utils/constants';
+
+import { VerifyOtpDto, VerifyTotpDto } from './dtos';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+
+    @InjectRepository(UserTwoFa)
+    private readonly userTwoFaRepository: Repository<UserTwoFa>,
+
+    private readonly userTwoFaService: UserTwoFaService,
+
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
     private jwtService: JwtService,
@@ -54,11 +68,17 @@ export class AuthService {
 
     const saveUser = await this.userRepository.save(newUser);
 
-    const url = `${this.configService.get<string>('WEB_CLIENT_URL')}/confirm-email/${saveUser.id}`;
+    const userTwoFa = this.userTwoFaRepository.create({
+      user: saveUser,
+      secret: '',
+    });
+    await this.userTwoFaRepository.save(userTwoFa);
+
+    const url = `${this.configService.get<string>(envKeys.WEB_CLIENT_URL)}/confirm-email/${saveUser.id}`;
 
     await this.mailerService.sendMail({
       to: saveUser.email,
-      from: 'Anh bao',
+      from: envKeys.EMAIL_SENDER,
       subject: 'Verify email',
       template: 'verification_email',
       context: {
@@ -68,9 +88,6 @@ export class AuthService {
   }
 
   async confirmEmailService(confirmData: ConfirmEmailDto) {
-    if (!confirmData.id) {
-      throw new Error(ErrorCode.MISSING_INPUT);
-    }
     const existedUser = await this.userRepository.findOne({
       where: { id: confirmData.id },
     });
@@ -82,52 +99,64 @@ export class AuthService {
     }
   }
 
-  async loginService(userData: LoginUserDto) {
+  async loginService(userData: LoginUserDto): Promise<ILoginResult> {
     const existedUser = await this.userRepository.findOne({
       where: { email: userData.email },
       withDeleted: true,
+      relations: ['userTwoFa'],
     });
+
     if (!existedUser) {
       throw new Error(ErrorCode.USER_NOT_FOUND);
     } else {
-      if (!existedUser.isAuthenticated) {
-        throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
-      } else if (existedUser.deletedAt) {
-        throw new Error(ErrorCode.EMAIL_DEACTIVATED);
-      }
-      const isCorrectPassword = bcrypt.compareSync(
-        userData.password,
-        existedUser.password,
-      );
-      if (!isCorrectPassword) {
-        throw new Error(ErrorCode.INCORRECT_PASSWORD);
-      }
-      const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
-        this.generateToken(existedUser, process.env.ACCESS_TOKEN_EXPIRATION),
-        this.generateToken(existedUser, process.env.REFRESH_TOKEN_EXPIRATION),
-      ]);
+      this.checkUserAuthentication(existedUser);
+      this.checkUserActivation(existedUser);
+      this.checkPassword(userData.password, existedUser.password);
 
-      if (
-        accessTokenResult.status === 'rejected' ||
-        refreshTokenResult.status === 'rejected'
-      ) {
-        throw new Error('Error generating tokens');
-      }
-      const { id, name, role, email, avatar, phoneNumber } = existedUser;
-
-      return {
-        accessToken: accessTokenResult.value,
-        refreshToken: refreshTokenResult.value,
-        currentUser: {
-          id,
-          name,
-          role,
-          email,
-          avatar,
-          phoneNumber,
-        },
-      };
+      return existedUser.userTwoFa?.status === StatusTwoFa.ENABLED
+        ? this.handleTwoFaStatus(existedUser)
+        : this.handleResponseAuthData(existedUser);
     }
+  }
+
+  async generateQrByUserId(userId: string) {
+    const { secret, qrCodeUrl } = await this.userTwoFaService.generateQr();
+
+    const existedUserTwoFa = await this.userTwoFaRepository.findOne({
+      where: { user: { id: userId } },
+      withDeleted: true,
+    });
+    existedUserTwoFa.secret = secret.base32;
+    await this.userTwoFaRepository.save(existedUserTwoFa);
+    return { userId, qrCodeUrl };
+  }
+
+  async verifyTotp(
+    veriyTotpData: VerifyTotpDto,
+  ): Promise<ILoginResultWithTokens> {
+    const existedUser = await this.userRepository.findOne({
+      where: { id: veriyTotpData.userId },
+      relations: ['userTwoFa'],
+    });
+    const verifiedTotp = await this.userTwoFaService.verifyTotp({
+      secret: existedUser.userTwoFa.secret,
+      token: veriyTotpData.token,
+    });
+    if (verifiedTotp) {
+      return this.handleResponseAuthData(existedUser);
+    } else {
+      throw new Error(ErrorCode.TOTP_INVALID);
+    }
+  }
+
+  async enableTwoFa(userId: string) {
+    const existedUserTwoFa = await this.userTwoFaRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['user'],
+    });
+    this.checkExistedUser(existedUserTwoFa.user);
+    existedUserTwoFa.status = StatusTwoFa.ENABLED;
+    await this.userTwoFaRepository.save(existedUserTwoFa);
   }
 
   async forgotPasswordService(forgotPasswordData: ForgotPasswordDto) {
@@ -150,7 +179,7 @@ export class AuthService {
 
     await this.mailerService.sendMail({
       to: forgotPasswordData.email,
-      from: 'Anh bao',
+      from: envKeys.EMAIL_SENDER,
       subject: 'Forgot password',
       template: 'password_reset_request',
       context: {
@@ -220,7 +249,7 @@ export class AuthService {
 
   async verifyTokenService(token: string) {
     return await this.jwtService.verifyAsync(token, {
-      secret: this.configService.get<string>('JWT_SECRET'),
+      secret: this.configService.get<string>(envKeys.JWT_SECRET),
     });
   }
 
@@ -233,8 +262,8 @@ export class AuthService {
     }
 
     const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
-      this.generateToken(existedUser, '1h'),
-      this.generateToken(existedUser, '1d'),
+      this.generateToken(existedUser, envKeys.ACCESS_TOKEN_EXPIRATION),
+      this.generateToken(existedUser, envKeys.REFRESH_TOKEN_EXPIRATION),
     ]);
 
     if (
@@ -249,7 +278,34 @@ export class AuthService {
       refreshToken: refreshTokenResult.value,
     };
   }
+  async handleResponseAuthData(user: User): Promise<ILoginResultWithTokens> {
+    const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
+      this.generateToken(user, process.env.ACCESS_TOKEN_EXPIRATION),
+      this.generateToken(user, process.env.REFRESH_TOKEN_EXPIRATION),
+    ]);
 
+    if (
+      accessTokenResult.status === 'rejected' ||
+      refreshTokenResult.status === 'rejected'
+    ) {
+      throw new Error('Error generating tokens');
+    }
+    const { id, name, role, email, avatar, phoneNumber } = user;
+
+    return {
+      accessToken: accessTokenResult.value,
+      refreshToken: refreshTokenResult.value,
+      currentUser: {
+        id,
+        name,
+        role,
+        email,
+        avatar,
+        status: user.userTwoFa.status,
+        phoneNumber,
+      },
+    };
+  }
   async generateToken(user: User, expiresIn: string | number): Promise<string> {
     const payload = {
       id: user.id,
@@ -260,5 +316,37 @@ export class AuthService {
     return this.jwtService.signAsync(payload, {
       expiresIn,
     });
+  }
+  private checkExistedUser(user: User) {
+    if (!user) {
+      throw new Error(ErrorCode.USER_NOT_FOUND);
+    }
+  }
+  private checkUserAuthentication(user: User) {
+    if (!user.isAuthenticated) {
+      throw new Error(ErrorCode.EMAIL_NO_AUTHENTICATED);
+    }
+  }
+
+  private checkUserActivation(user: User) {
+    if (user.deletedAt) {
+      throw new Error(ErrorCode.EMAIL_DEACTIVATED);
+    }
+  }
+
+  private checkPassword(inputPassword: string, storedPassword: string) {
+    const isCorrectPassword = bcrypt.compareSync(inputPassword, storedPassword);
+    if (!isCorrectPassword) {
+      throw new Error(ErrorCode.INCORRECT_PASSWORD);
+    }
+  }
+
+  private handleTwoFaStatus(user: User) {
+    return {
+      userId: user.id,
+      statusTwoFa: user.userTwoFa.secret
+        ? StatusEnableTwoFa.TWO_FA_ENABLED_WITH_SECRET
+        : StatusEnableTwoFa.TWO_FA_ENABLED_NO_SECRET,
+    };
   }
 }

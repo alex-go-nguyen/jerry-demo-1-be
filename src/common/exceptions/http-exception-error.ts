@@ -47,4 +47,9 @@ export const exceptionCase = {
     message: 'Invitation is not found',
     errorCode: ErrorCode.INVITATION_NOT_FOUND,
   },
+  [ErrorCode.TOTP_INVALID]: {
+    status: HttpStatus.BAD_REQUEST,
+    message: 'Totp is invalid',
+    errorCode: ErrorCode.TOTP_INVALID,
+  },
 };
