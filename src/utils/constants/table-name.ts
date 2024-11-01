@@ -1,4 +1,4 @@
-export const tableNames = {
+export const TABLES = {
   user: 'user',
   userTwoFa: 'user_two_fa',
   account: 'account',
@@ -6,13 +6,4 @@ export const tableNames = {
   workspaceAccounts: 'workspace_accounts',
   workspaceUsers: 'workspace_users',
   workspaceSharingInvitation: 'workspace_sharing_invitation',
-};
-
-export const tableRelations = {
-  userTwoFa: 'userTwoFa',
-  user: 'user',
-  owner: 'owner',
-  accounts: 'accounts',
-  workspace: 'workspace',
-  members: 'members',
 };

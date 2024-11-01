@@ -11,7 +11,7 @@ import { ErrorCode, statusInvitationWorkspace } from '@/common/enums';
 import { User } from '@/modules/user/entities/user.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
-import { envKeys, tableRelations } from '@/utils/constants';
+import { envKeys } from '@/utils/constants';
 
 import { WorkspaceSharingInvitation } from './entities/sharing-workspace.entity';
 
@@ -41,7 +41,7 @@ export class SharingWorkspaceService {
         id: createSharingWorkspaceDto.workspaceId,
         owner: { id: ownerId },
       },
-      relations: [tableRelations.owner],
+      relations: ['owner'],
     });
 
     if (!workspace) {
@@ -79,7 +79,7 @@ export class SharingWorkspaceService {
   ) {
     const invitation = await this.workspaceSharingInvitationRepository.findOne({
       where: { id: confirmSharingWorkspaceData.inviteId },
-      relations: [tableRelations.workspace],
+      relations: ['workspace'],
     });
 
     if (!invitation) {
@@ -103,7 +103,7 @@ export class SharingWorkspaceService {
 
     const workspace = await this.workspaceRepository.findOne({
       where: { id: invitation.workspace.id },
-      relations: [tableRelations.members],
+      relations: ['members'],
     });
 
     if (workspace) {

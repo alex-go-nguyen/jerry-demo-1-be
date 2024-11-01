@@ -9,7 +9,7 @@ import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
-import { tableNames } from '@/utils/constants';
+import { TABLES } from '@/utils/constants';
 
 @Injectable()
 export class DashboardService {
@@ -24,7 +24,7 @@ export class DashboardService {
 
   async getUserRegistrations() {
     const data = await this.userRepository
-      .createQueryBuilder(tableNames.user)
+      .createQueryBuilder(TABLES.user)
       .select("TO_CHAR(user.createdAt, 'Month') as month")
       .addSelect('CAST(EXTRACT(YEAR FROM user.createdAt) AS INTEGER) as year')
       .addSelect('CAST(COUNT(user.id) AS INTEGER) as value')
@@ -44,7 +44,7 @@ export class DashboardService {
 
   async getAccountsByDomain() {
     const result = await this.accountRepository
-      .createQueryBuilder(tableNames.account)
+      .createQueryBuilder(TABLES.account)
       .select('account.domain', 'domain')
       .addSelect('COUNT(account.id)', 'value')
       .groupBy('account.domain')

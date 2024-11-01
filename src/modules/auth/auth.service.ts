@@ -27,7 +27,7 @@ import {
 } from '@/modules/user/dtos';
 import { ILoginResult, ILoginResultWithTokens } from '@/interfaces';
 
-import { envKeys, tableRelations } from '@/utils/constants';
+import { envKeys } from '@/utils/constants';
 
 import { VerifyOtpDto, VerifyTotpDto } from './dtos';
 
@@ -103,7 +103,7 @@ export class AuthService {
     const existedUser = await this.userRepository.findOne({
       where: { email: userData.email },
       withDeleted: true,
-      relations: [tableRelations.userTwoFa],
+      relations: ['userTwoFa'],
     });
 
     if (!existedUser) {
@@ -136,7 +136,7 @@ export class AuthService {
   ): Promise<ILoginResultWithTokens> {
     const existedUser = await this.userRepository.findOne({
       where: { id: veriyTotpData.userId },
-      relations: [tableRelations.userTwoFa],
+      relations: ['userTwoFa'],
     });
     const verifiedTotp = await this.userTwoFaService.verifyTotp({
       secret: existedUser.userTwoFa.secret,
@@ -152,7 +152,7 @@ export class AuthService {
   async enableTwoFa(userId: string) {
     const existedUserTwoFa = await this.userTwoFaRepository.findOne({
       where: { user: { id: userId } },
-      relations: [tableRelations.user],
+      relations: ['user'],
     });
     this.checkExistedUser(existedUserTwoFa.user);
     existedUserTwoFa.status = StatusTwoFa.ENABLED;
