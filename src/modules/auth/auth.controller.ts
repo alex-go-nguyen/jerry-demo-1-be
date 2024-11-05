@@ -13,14 +13,8 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
-  Param,
-  Delete,
+  UnauthorizedException,
 } from '@nestjs/common';
-
-import { Response } from 'express';
-
-import { ErrorCode, Role } from '@/common/enums';
-
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -30,11 +24,15 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 
 import { handleDataResponse } from '@/utils';
-
-import { AuthService } from '@/modules/auth/auth.service';
-
+import { ErrorCode, Role } from '@/common/enums';
+import {
+  ILoginResult,
+  ILoginResultWith2FA,
+  ILoginResultWithTokens,
+} from '@/interfaces';
 import {
   CreateUserDto,
   LoginUserDto,
@@ -42,19 +40,13 @@ import {
   ChangePasswordDto,
   ForgotPasswordDto,
 } from '@/modules/user/dtos';
-
+import { AuthService } from '@/modules/auth/auth.service';
 import { User } from '@/modules/user/entities/user.entity';
 
 import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
-
 import { VerifyOtpDto, VerifyTotpDto } from './dtos';
-import {
-  ILoginResult,
-  ILoginResultWith2FA,
-  ILoginResultWithTokens,
-} from '@/interfaces';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -134,21 +126,24 @@ export class AuthController {
     }
   }
 
-  @Get('generate-qr/:userId')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.Admin, Role.User)
+  @Get('generate-qr')
   @HttpCode(200)
   @ApiOkResponse({ description: 'token' })
-  async generateQr(@Param('userId') userId: string) {
+  async generateQr(@Req() request: Request) {
     try {
-      if (!userId) {
-        throw new BadRequestException(ErrorCode.MISSING_INPUT);
+      const user = request['user'] as User;
+      if (!user) {
+        throw new UnauthorizedException(ErrorCode.USER_NOT_FOUND);
       }
-      return await this.authService.generateQrByUserId(userId);
+      return await this.authService.generateQrByUserId(user.id);
     } catch (error) {
       throw error;
     }
   }
 
-  @Post('verify-totp')
+  @Post('verify-token-2fa')
   @HttpCode(200)
   @ApiOkResponse({ description: 'token' })
   async verifyTotp(
@@ -157,7 +152,8 @@ export class AuthController {
     @Req() request: Request,
   ) {
     try {
-      const resultData = await this.authService.verifyTotp(veriyTotpData);
+      const resultData = await this.authService.verifyTokenTwoFa(veriyTotpData);
+      console.log('resultData', resultData);
       this.handleResponseAuthData(resultData, request, response);
     } catch (error) {
       if (error.message === ErrorCode.TOTP_INVALID) {
@@ -183,7 +179,8 @@ export class AuthController {
     }
   }
 
-  @Delete('logout')
+  @Post('logout')
+  @HttpCode(204)
   async logout(@Res({ passthrough: true }) response: Response) {
     try {
       response.clearCookie('access_token', {
@@ -304,7 +301,7 @@ export class AuthController {
   private isLoginResultWith2FA(
     result: ILoginResult,
   ): result is ILoginResultWith2FA {
-    return (result as ILoginResultWith2FA).statusTwoFa !== undefined;
+    return (result as ILoginResultWith2FA).statusEnableTwoFa !== undefined;
   }
   private handleResponseAuthData(
     resultData: ILoginResultWithTokens,

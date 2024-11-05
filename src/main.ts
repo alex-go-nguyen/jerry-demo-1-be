@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
+import * as cookieParser from 'cookie-parser';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-
-import * as cookieParser from 'cookie-parser';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 import { CustomExceptionFilter } from '@/common/exceptions';
 
@@ -14,10 +14,10 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   const config = new DocumentBuilder()
-    .setTitle('Auth api')
-    .setDescription('The auth API description')
-    .setVersion('1.0')
-    .addTag('Auth')
+    .setTitle('Go Password Manager api')
+    .setDescription('The Go Password Manager API description')
+    .setVersion('2.0')
+    .addTag('Go Password Manager')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   const port = configService.get<number>('PORT') || 3000;
@@ -32,6 +32,19 @@ async function bootstrap() {
   app.use(cookieParser());
   app.setGlobalPrefix('api');
   app.useGlobalFilters(new CustomExceptionFilter());
+
+  const appRedis = await NestFactory.createMicroservice<MicroserviceOptions>(
+    AppModule,
+    {
+      transport: Transport.REDIS,
+      options: {
+        host: 'localhost',
+        port: 6379,
+      },
+    },
+  );
+
   await app.listen(port);
+  await appRedis.listen();
 }
 bootstrap();

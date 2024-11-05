@@ -7,7 +7,7 @@ export interface ILoginInputData {
 
 export interface ILoginResultWith2FA {
   userId: string;
-  statusTwoFa: StatusEnableTwoFa;
+  statusEnableTwoFa: StatusEnableTwoFa;
 }
 
 export interface ILoginResultWithTokens {
@@ -21,6 +21,7 @@ export interface ILoginResultWithTokens {
     avatar: string;
     status: string;
     phoneNumber: string;
+    isSkippedTwoFa: boolean;
   };
 }
 
