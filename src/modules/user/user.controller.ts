@@ -8,22 +8,20 @@ import {
   Param,
   Patch,
   Query,
+  Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-
 import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { ErrorCode, Role } from '@/common/enums';
-import { Roles } from '@/modules/auth/roles.decorator';
-
-import { RolesGuard } from '@/modules/auth/roles.guard';
 import { AuthGuard } from '@/modules/auth/auth.guard';
+import { Roles } from '@/modules/auth/roles.decorator';
+import { RolesGuard } from '@/modules/auth/roles.guard';
 
-import { currentUser } from './user.decorator';
 import { UsersService } from './user.service';
-
 import { User } from './entities/user.entity';
-
+import { currentUser } from './user.decorator';
 import { UpdateUserDto } from './dtos/update-user.dto';
 
 @ApiTags('Users')
@@ -97,5 +95,19 @@ export class UsersController {
   @Roles(Role.Admin, Role.User)
   async me(@currentUser() user: User) {
     return this.usersService.findById(user.id);
+  }
+
+  @Patch('skip-twofa')
+  @Roles(Role.Admin, Role.User)
+  async skipTwoFa(@Req() request: Request) {
+    try {
+      const user = request['user'] as User;
+      if (!user) {
+        throw new UnauthorizedException(ErrorCode.USER_NOT_FOUND);
+      }
+      return this.usersService.skipTwoFa(user.id);
+    } catch (error) {
+      throw error;
+    }
   }
 }

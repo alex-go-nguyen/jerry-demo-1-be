@@ -1,22 +1,12 @@
+import Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
-
 import { LRUCache } from 'lru-cache';
-
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { Injectable } from '@nestjs/common';
-
 import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { MailerService } from '@nestjs-modules/mailer';
-
-import { ErrorCode, StatusEnableTwoFa, StatusTwoFa } from '@/common/enums';
-
-import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
-
-import { User } from '@/modules/user/entities/user.entity';
-import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
 import {
   CreateUserDto,
@@ -25,14 +15,18 @@ import {
   ForgotPasswordDto,
   ChangePasswordDto,
 } from '@/modules/user/dtos';
-import { ILoginResult, ILoginResultWithTokens } from '@/interfaces';
-
 import { envKeys } from '@/utils/constants';
+import { User } from '@/modules/user/entities/user.entity';
+import { ILoginResult, ILoginResultWithTokens } from '@/interfaces';
+import { ErrorCode, StatusEnableTwoFa, StatusTwoFa } from '@/common/enums';
+import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
+import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
 import { VerifyOtpDto, VerifyTotpDto } from './dtos';
 
 @Injectable()
 export class AuthService {
+  private redisClient: Redis;
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -46,7 +40,9 @@ export class AuthService {
     private readonly configService: ConfigService,
     private jwtService: JwtService,
     private readonly cache: LRUCache<string, string>,
-  ) {}
+  ) {
+    this.redisClient = new Redis();
+  }
 
   async registerService(userData: CreateUserDto) {
     const existedUser = await this.userRepository.findOne({
@@ -121,28 +117,38 @@ export class AuthService {
 
   async generateQrByUserId(userId: string) {
     const { secret, qrCodeUrl } = await this.userTwoFaService.generateQr();
-
-    const existedUserTwoFa = await this.userTwoFaRepository.findOne({
-      where: { user: { id: userId } },
-      withDeleted: true,
-    });
-    existedUserTwoFa.secret = secret.base32;
-    await this.userTwoFaRepository.save(existedUserTwoFa);
-    return { userId, qrCodeUrl };
+    await this.redisClient.setex(`secret:${userId}`, 300, secret.base32);
+    return { qrCodeUrl };
   }
 
-  async verifyTotp(
+  async verifyTokenTwoFa(
     veriyTotpData: VerifyTotpDto,
   ): Promise<ILoginResultWithTokens> {
     const existedUser = await this.userRepository.findOne({
       where: { id: veriyTotpData.userId },
       relations: ['userTwoFa'],
     });
+    const existedSecretTwoFa = existedUser.userTwoFa.secret;
+    const secret =
+      (await this.redisClient.get(`secret:${veriyTotpData.userId}`)) ||
+      existedSecretTwoFa;
+
     const verifiedTotp = await this.userTwoFaService.verifyTotp({
-      secret: existedUser.userTwoFa.secret,
+      secret,
       token: veriyTotpData.token,
     });
+
     if (verifiedTotp) {
+      if (!existedSecretTwoFa) {
+        await this.userTwoFaRepository.update(
+          { user: { id: existedUser.id } },
+          {
+            secret: secret,
+            status: StatusTwoFa.ENABLED,
+          },
+        );
+      }
+
       return this.handleResponseAuthData(existedUser);
     } else {
       throw new Error(ErrorCode.TOTP_INVALID);
@@ -155,7 +161,6 @@ export class AuthService {
       relations: ['user'],
     });
     this.checkExistedUser(existedUserTwoFa.user);
-    existedUserTwoFa.status = StatusTwoFa.ENABLED;
     await this.userTwoFaRepository.save(existedUserTwoFa);
   }
 
@@ -290,8 +295,19 @@ export class AuthService {
     ) {
       throw new Error('Error generating tokens');
     }
-    const { id, name, role, email, avatar, phoneNumber } = user;
-
+    const {
+      id,
+      name,
+      role,
+      email,
+      avatar,
+      phoneNumber,
+      userTwoFa: { status },
+    } = user;
+    const isSkippedTwoFa =
+      status === StatusTwoFa.NOT_REGISTERED
+        ? !!(await this.redisClient.get(`isSkippedTwoFa-${id}`))
+        : false;
     return {
       accessToken: accessTokenResult.value,
       refreshToken: refreshTokenResult.value,
@@ -301,7 +317,8 @@ export class AuthService {
         role,
         email,
         avatar,
-        status: user.userTwoFa.status,
+        status: status,
+        isSkippedTwoFa,
         phoneNumber,
       },
     };
@@ -344,7 +361,7 @@ export class AuthService {
   private handleTwoFaStatus(user: User) {
     return {
       userId: user.id,
-      statusTwoFa: user.userTwoFa.secret
+      statusEnableTwoFa: user.userTwoFa.secret
         ? StatusEnableTwoFa.TWO_FA_ENABLED_WITH_SECRET
         : StatusEnableTwoFa.TWO_FA_ENABLED_NO_SECRET,
     };
