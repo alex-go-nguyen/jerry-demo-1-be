@@ -1,3 +1,4 @@
+import Redis from 'ioredis';
 import {
   Controller,
   Post,
@@ -14,6 +15,7 @@ import {
   Get,
   HttpCode,
   UnauthorizedException,
+  Param,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -51,7 +53,10 @@ import { VerifyOtpDto, VerifyTotpDto } from './dtos';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private redisClient: Redis;
+  constructor(private readonly authService: AuthService) {
+    this.redisClient = new Redis();
+  }
 
   @Post('register')
   @HttpCode(201)
@@ -153,7 +158,6 @@ export class AuthController {
   ) {
     try {
       const resultData = await this.authService.verifyTokenTwoFa(veriyTotpData);
-      console.log('resultData', resultData);
       this.handleResponseAuthData(resultData, request, response);
     } catch (error) {
       if (error.message === ErrorCode.TOTP_INVALID) {
@@ -303,7 +307,7 @@ export class AuthController {
   ): result is ILoginResultWith2FA {
     return (result as ILoginResultWith2FA).statusEnableTwoFa !== undefined;
   }
-  private handleResponseAuthData(
+  private async handleResponseAuthData(
     resultData: ILoginResultWithTokens,
     request: Request,
     response: Response,
@@ -330,5 +334,21 @@ export class AuthController {
         ...handleDataResponse('Login successfully!'),
         currentUser: { ...resultData.currentUser },
       });
+    this.redisClient.setex(
+      `userId:${resultData.currentUser.id}`,
+      3600,
+      resultData.accessToken,
+    );
+  }
+
+  @Get('get-token/:userId')
+  @HttpCode(200)
+  async getTokenByUserId(@Param('userId') userId: string) {
+    const accessToken = await this.redisClient.get(`userId:${userId}`);
+    if (accessToken) {
+      return { accessToken };
+    } else {
+      throw new NotFoundException('No token founded');
+    }
   }
 }
