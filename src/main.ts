@@ -18,6 +18,7 @@ async function bootstrap() {
     .setDescription('The Go Password Manager API description')
     .setVersion('2.0')
     .addTag('Go Password Manager')
+    .addServer('/api')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   const port = configService.get<number>('PORT') || 3000;

@@ -1,29 +1,19 @@
 import { Module } from '@nestjs/common';
-
 import { APP_GUARD } from '@nestjs/core';
-
 import { ConfigModule } from '@nestjs/config';
-
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-
 import { MailerModule } from '@nestjs-modules/mailer';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
 
-import { DatabaseModule } from '@/database/database.module';
-
 import { AuthModule } from '@/modules/auth/auth.module';
-
 import { UsersModule } from '@/modules/user/user.module';
-
+import { DatabaseModule } from '@/database/database.module';
 import { AccountModule } from '@/modules/account/account.module';
-
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
-
 import { WorkspaceModule } from '@/modules/workspace/workspace.module';
-
-import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-workspace.module';
-
 import { TwoFactorAuthModule } from '@/modules/user-twofa/user-twofa.module';
+import { ContactInfoModule } from '@/modules/contact-info/contact-info.module';
+import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-workspace.module';
 
 @Module({
   imports: [
@@ -68,6 +58,7 @@ import { TwoFactorAuthModule } from '@/modules/user-twofa/user-twofa.module';
     WorkspaceModule,
     SharingWorkspaceModule,
     TwoFactorAuthModule,
+    ContactInfoModule,
   ],
 
   providers: [
