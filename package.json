@@ -54,6 +54,7 @@
     "husky": "^9.1.6",
     "ioredis": "^5.4.1",
     "lru-cache": "^11.0.1",
+    "nestjs-fingerprint": "^1.0.4",
     "nodemailer": "^6.9.15",
     "pg": "^8.12.0",
     "qrcode": "^1.5.4",
