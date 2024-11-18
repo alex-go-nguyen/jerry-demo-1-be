@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { NestjsFingerprintModule } from 'nestjs-fingerprint';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
 
@@ -13,10 +14,17 @@ import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { WorkspaceModule } from '@/modules/workspace/workspace.module';
 import { TwoFactorAuthModule } from '@/modules/user-twofa/user-twofa.module';
 import { ContactInfoModule } from '@/modules/contact-info/contact-info.module';
+import { LoginHistoryModule } from '@/modules/login-history/login-history.module';
 import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-workspace.module';
-
 @Module({
   imports: [
+    NestjsFingerprintModule.forRoot({
+      params: ['headers', 'userAgent', 'ipAddress'],
+      cookieOptions: {
+        name: 'login_history',
+        httpOnly: true,
+      },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -59,6 +67,7 @@ import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-work
     SharingWorkspaceModule,
     TwoFactorAuthModule,
     ContactInfoModule,
+    LoginHistoryModule,
   ],
 
   providers: [

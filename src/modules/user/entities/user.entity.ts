@@ -16,6 +16,7 @@ import { Account } from '@/modules/account/entities/account.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 import { ContactInfo } from '@/modules/contact-info/entities/contact-info.entity';
+import { LoginHistory } from '@/modules/login-history/entities/login-history.entity';
 
 @Entity()
 export class User {
@@ -65,6 +66,10 @@ export class User {
   @OneToMany(() => ContactInfo, (contactInfo) => contactInfo.owner)
   @ApiProperty({ type: () => [ContactInfo] })
   contactInfos: ContactInfo[];
+
+  @OneToMany(() => LoginHistory, (loginHistory) => loginHistory.user)
+  @ApiProperty({ type: () => [LoginHistory] })
+  loginHistories: LoginHistory[];
 
   @ManyToMany(() => Workspace, (workspace) => workspace.members)
   @ApiProperty()
