@@ -21,7 +21,7 @@ export class ContactInfoService {
       ...createContactInfoData,
     });
 
-    await this.contactInfoRepository.save(newContactInfo);
+    return this.contactInfoRepository.save(newContactInfo);
   }
 
   async getContactInfoByUserId(userId: string) {
@@ -63,7 +63,7 @@ export class ContactInfoService {
     }
     Object.assign(existedContactInfo, updateContactInfoData);
 
-    return await this.contactInfoRepository.save(existedContactInfo);
+    return this.contactInfoRepository.save(existedContactInfo);
   }
 
   async softRemove(userId: string, contactInfoId: string) {
@@ -74,7 +74,7 @@ export class ContactInfoService {
 
     if (!existedContactInfo) throw new Error(ErrorCode.CONTACT_INFO_NOT_FOUND);
 
-    return await this.contactInfoRepository.softRemove(existedContactInfo);
+    return this.contactInfoRepository.softRemove(existedContactInfo);
   }
 
   async restore(contactInfoId: string) {
