@@ -37,6 +37,11 @@ export const exceptionCase = {
     message: 'Invalid confirmation link!',
     errorCode: ErrorCode.INVALID_LINK_EMAIL_VERIFICATION,
   },
+  [ErrorCode.INVALID_LINK_CONFIRM_INVITATION]: {
+    status: HttpStatus.BAD_REQUEST,
+    message: 'Invalid invitation link!',
+    errorCode: ErrorCode.INVALID_LINK_CONFIRM_INVITATION,
+  },
   [ErrorCode.EMAIL_DEACTIVATED]: {
     status: HttpStatus.FORBIDDEN,
     message: 'Email has been deactivated!',

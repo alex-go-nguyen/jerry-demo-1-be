@@ -17,6 +17,7 @@ import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 import { ContactInfo } from '@/modules/contact-info/entities/contact-info.entity';
 import { LoginHistory } from '@/modules/login-history/entities/login-history.entity';
+import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
 
 @Entity()
 export class User {
@@ -59,9 +60,12 @@ export class User {
   @OneToOne(() => UserTwoFa, (userTwoFa) => userTwoFa.user)
   userTwoFa: UserTwoFa;
 
-  @OneToMany(() => Account, (account) => account.user)
+  @OneToMany(() => Account, (account) => account.owner)
   @ApiProperty({ type: () => [Account] })
   accounts: Account[];
+
+  @OneToMany(() => AccountsSharingMembers, (member) => member.member)
+  sharedAccounts: AccountsSharingMembers[];
 
   @OneToMany(() => ContactInfo, (contactInfo) => contactInfo.owner)
   @ApiProperty({ type: () => [ContactInfo] })

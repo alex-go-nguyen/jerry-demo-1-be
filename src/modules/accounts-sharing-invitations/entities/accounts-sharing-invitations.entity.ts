@@ -7,20 +7,20 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { StatusInvitation } from '@/common/enums';
 import { User } from '@/modules/user/entities/user.entity';
-import { Workspace } from '@/modules/workspace/entities/workspace.entity';
+import { RoleAccess, StatusInvitation } from '@/common/enums';
+import { Account } from '@/modules/account/entities/account.entity';
 
 @Entity()
-export class WorkspaceSharingInvitation {
+export class AccountsSharingInvitations {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ManyToOne(() => User)
   owner: User;
 
-  @ManyToOne(() => Workspace)
-  workspace: Workspace;
+  @ManyToOne(() => Account)
+  account: Account;
 
   @Column()
   email: string;
@@ -31,6 +31,13 @@ export class WorkspaceSharingInvitation {
     default: StatusInvitation.PENDING,
   })
   status: StatusInvitation;
+
+  @Column({
+    type: 'enum',
+    enum: RoleAccess,
+    default: RoleAccess.Read,
+  })
+  roleAccess: RoleAccess;
 
   @CreateDateColumn()
   createdAt: Date;

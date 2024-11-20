@@ -267,8 +267,8 @@ export class AuthService {
     }
 
     const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
-      this.generateToken(existedUser, envKeys.ACCESS_TOKEN_EXPIRATION),
-      this.generateToken(existedUser, envKeys.REFRESH_TOKEN_EXPIRATION),
+      this.generateToken(existedUser, process.env.ACCESS_TOKEN_EXPIRATION),
+      this.generateToken(existedUser, process.env.REFRESH_TOKEN_EXPIRATION),
     ]);
 
     if (
