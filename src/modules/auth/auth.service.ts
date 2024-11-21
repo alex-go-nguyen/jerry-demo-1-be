@@ -267,8 +267,14 @@ export class AuthService {
     }
 
     const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
-      this.generateToken(existedUser, envKeys.ACCESS_TOKEN_EXPIRATION),
-      this.generateToken(existedUser, envKeys.REFRESH_TOKEN_EXPIRATION),
+      this.generateToken(
+        existedUser,
+        this.configService.get<string>(envKeys.ACCESS_TOKEN_EXPIRATION),
+      ),
+      this.generateToken(
+        existedUser,
+        this.configService.get<string>(envKeys.REFRESH_TOKEN_EXPIRATION),
+      ),
     ]);
 
     if (
@@ -285,8 +291,14 @@ export class AuthService {
   }
   async handleResponseAuthData(user: User): Promise<ILoginResultWithTokens> {
     const [accessTokenResult, refreshTokenResult] = await Promise.allSettled([
-      this.generateToken(user, process.env.ACCESS_TOKEN_EXPIRATION),
-      this.generateToken(user, process.env.REFRESH_TOKEN_EXPIRATION),
+      this.generateToken(
+        user,
+        this.configService.get<string>(envKeys.ACCESS_TOKEN_EXPIRATION),
+      ),
+      this.generateToken(
+        user,
+        this.configService.get<string>(envKeys.REFRESH_TOKEN_EXPIRATION),
+      ),
     ]);
 
     if (

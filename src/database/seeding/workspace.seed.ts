@@ -1,7 +1,8 @@
-import { AppDataSource } from 'typeorm.config';
 import { faker } from '@faker-js/faker';
-import { Account } from '@/modules/account/entities/account.entity';
+import { AppDataSource } from 'typeorm.config';
+
 import { User } from '@/modules/user/entities/user.entity';
+import { Account } from '@/modules/account/entities/account.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
 export async function seedWorkspaces() {
@@ -14,8 +15,8 @@ export async function seedWorkspaces() {
   for (const user of users) {
     for (let i = 0; i < 10; i++) {
       const accounts = await accountRepository.find({
-        where: { user: { id: user.id } },
-        relations: ['user'],
+        where: { owner: { id: user.id } },
+        relations: ['owner'],
       });
       const workspace = workspaceRepository.create({
         name: faker.company.name(),

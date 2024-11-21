@@ -1,18 +1,17 @@
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Injectable } from '@nestjs/common';
-
 import { ErrorCode } from '@/common/enums';
-
+import { Injectable } from '@nestjs/common';
 import { EncryptionService } from '@/encryption/encryption.service';
 
-import { TABLES } from '@/utils/constants';
-
 import { Account } from './entities/account.entity';
-
 import { CreateAccountDto, UpdateAccountDto } from './dto';
 
+export type CheckOwnerParams = {
+  ownerId: string;
+  accountId: string;
+};
 @Injectable()
 export class AccountService {
   constructor(
@@ -27,7 +26,7 @@ export class AccountService {
     );
 
     const newAccount = this.accountRepository.create({
-      user: user.id,
+      owner: user.id,
       domain: createAccountData.domain,
       username: createAccountData.username,
       password: encryptedPassword,
@@ -35,26 +34,55 @@ export class AccountService {
 
     await this.accountRepository.save(newAccount);
   }
-  async getAccountsByUserId(userId: string): Promise<Account[]> {
-    return this.accountRepository
-      .createQueryBuilder(TABLES.account)
-      .leftJoinAndSelect('account.user', 'user')
-      .leftJoin('account.workspaces', 'workspace')
-      .leftJoinAndSelect('workspace.members', 'member')
-      .where('user.id = :userId', { userId })
-      .orWhere('member.id = :userId', { userId })
-      .getMany();
+
+  async checkOwner({ ownerId, accountId }: CheckOwnerParams): Promise<boolean> {
+    const account = await this.accountRepository.findOne({
+      where: { id: accountId, owner: { id: ownerId } },
+    });
+    return !!account;
   }
 
-  async getAccountByUserIdAndAccountId(
-    userId: string,
-    accountId: string,
-  ): Promise<Account> {
-    const account = await this.accountRepository.findOne({
-      where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
+  async getAccountsByUserId(userId: string) {
+    const accounts = await this.accountRepository.find({
+      where: [
+        { owner: { id: userId } },
+        { members: { member: { id: userId } } },
+      ],
+      relations: ['owner', 'members', 'members.member'],
       select: {
-        user: { id: true },
+        id: true,
+        domain: true,
+        username: true,
+        password: true,
+        owner: { id: true, name: true, email: true, avatar: true },
+        members: {
+          roleAccess: true,
+          member: { id: true, name: true, email: true, avatar: true },
+        },
+      },
+    });
+    return accounts.map((account) => ({
+      ...account,
+      members: account.members.map((member) => ({
+        id: member.member.id,
+        name: member.member.name,
+        email: member.member.email,
+        avatar: member.member.avatar,
+        roleAccess: member.roleAccess,
+      })),
+    }));
+  }
+
+  async getAccountById(accountId: string) {
+    const account = await this.accountRepository.findOne({
+      where: { id: accountId },
+      relations: ['owner', 'members', 'members.member'],
+      select: {
+        id: true,
+        domain: true,
+        username: true,
+        password: true,
+        owner: { id: true, name: true, email: true, avatar: true },
       },
     });
 
@@ -62,7 +90,16 @@ export class AccountService {
       throw new Error(ErrorCode.ACCOUNT_NOT_FOUND);
     }
 
-    return account;
+    return {
+      ...account,
+      members: account.members.map((member) => ({
+        id: member.member.id,
+        name: member.member.name,
+        email: member.member.email,
+        avatar: member.member.avatar,
+        roleAccess: member.roleAccess,
+      })),
+    };
   }
 
   async updateAccount(
@@ -71,30 +108,34 @@ export class AccountService {
     updateAccountData: UpdateAccountDto,
   ) {
     const existedAccount = await this.accountRepository.findOne({
-      where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
-      select: {
-        user: { id: true },
-      },
+      where: [
+        {
+          id: accountId,
+        },
+        { owner: { id: userId } },
+        { members: { member: { id: userId } } },
+      ],
+      relations: ['owner', 'members'],
     });
 
     if (!existedAccount) throw new Error(ErrorCode.ACCOUNT_NOT_FOUND);
 
-    existedAccount.domain = updateAccountData.domain;
-    existedAccount.username = updateAccountData.username;
-    existedAccount.password = this.encryptionService.encryptPassword(
+    const encryptedPassword = this.encryptionService.encryptPassword(
       updateAccountData.password,
     );
 
-    const updatedAccount = await this.accountRepository.save(existedAccount);
-    return updatedAccount;
+    return await this.accountRepository.update(accountId, {
+      domain: updateAccountData.domain,
+      username: updateAccountData.username,
+      password: encryptedPassword,
+    });
   }
   async softRemove(userId: string, accountId: string) {
     const existedAccount = await this.accountRepository.findOne({
-      where: { id: accountId, user: { id: userId } },
-      relations: ['user'],
+      where: { id: accountId, owner: { id: userId } },
+      relations: ['owner'],
       select: {
-        user: { id: true },
+        owner: { id: true },
       },
     });
 

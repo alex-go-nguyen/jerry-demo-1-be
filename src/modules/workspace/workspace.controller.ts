@@ -5,14 +5,12 @@ import {
   Body,
   Param,
   Delete,
-  Req,
   BadRequestException,
   UseGuards,
   Put,
   HttpCode,
   Patch,
 } from '@nestjs/common';
-
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -21,18 +19,16 @@ import {
 } from '@nestjs/swagger';
 
 import { Role } from '@/common/enums';
+import { CurrentUser } from '@/decorators';
+import { handleDataResponse } from '@/utils';
+import { AuthGuard } from '@/modules/auth/auth.guard';
+import { Roles } from '@/modules/auth/roles.decorator';
+import { RolesGuard } from '@/modules/auth/roles.guard';
+import { User } from '@/modules/user/entities/user.entity';
 
 import { WorkspaceService } from './workspace.service';
-
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
-
-import { AuthGuard } from '@/modules/auth/auth.guard';
-
-import { RolesGuard } from '@/modules/auth/roles.guard';
-
-import { Roles } from '@/modules/auth/roles.decorator';
-import { handleDataResponse } from '@/utils';
 
 @ApiTags('Workspace')
 @Controller('workspaces')
@@ -48,10 +44,8 @@ export class WorkspaceController {
   })
   async create(
     @Body() createWorkspaceDto: CreateWorkspaceDto,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
-    const user = request['user'];
-
     createWorkspaceDto.userId = user.id;
 
     try {
@@ -65,8 +59,7 @@ export class WorkspaceController {
   @Get('')
   @Roles(Role.User)
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
-  async findAll(@Req() request: Request) {
-    const user = request['user'];
+  async findAll(@CurrentUser() user: User) {
     return this.workspaceService.getWorkspacesByUserId(user.id);
   }
 
@@ -76,11 +69,9 @@ export class WorkspaceController {
   async update(
     @Param('workspaceId') workspaceId: string,
     @Body() updateWorkspaceDto: UpdateWorkspaceDto,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
-
       updateWorkspaceDto.userId = user.id;
       updateWorkspaceDto.workspaceId = workspaceId;
 
@@ -97,10 +88,9 @@ export class WorkspaceController {
   @ApiBadRequestResponse({ description: 'Missing input!' })
   async softRemove(
     @Param('workspaceId') workspaceId: string,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
       await this.workspaceService.softRemove(user.id, workspaceId);
       return handleDataResponse('Delete workspace successfully', 'OK');
     } catch (error) {

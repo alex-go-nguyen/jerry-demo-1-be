@@ -1,7 +1,8 @@
-import { AppDataSource } from 'typeorm.config';
 import { faker } from '@faker-js/faker';
-import { Account } from '@/modules/account/entities/account.entity';
+import { AppDataSource } from 'typeorm.config';
+
 import { User } from '@/modules/user/entities/user.entity';
+import { Account } from '@/modules/account/entities/account.entity';
 
 export async function seedAccounts() {
   const accountRepository = AppDataSource.getRepository(Account);
@@ -21,7 +22,7 @@ export async function seedAccounts() {
   for (const user of users) {
     for (let i = 0; i < 10; i++) {
       const account = new Account();
-      account.user = user;
+      account.owner = user;
       account.domain = domains[Math.floor(Math.random() * domains.length)];
       account.username = faker.internet.userName();
       account.password = faker.internet.password();

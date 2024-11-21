@@ -4,19 +4,18 @@ import {
   Controller,
   Post,
   Body,
-  Req,
   UseGuards,
   NotFoundException,
   HttpCode,
 } from '@nestjs/common';
 
-import { ErrorCode, Role } from '@/common/enums';
-
-import { AuthGuard } from '@/modules/auth/auth.guard';
-import { RolesGuard } from '@/modules/auth/roles.guard';
-import { Roles } from '@/modules/auth/roles.decorator';
-
+import { CurrentUser } from '@/decorators';
 import { handleDataResponse } from '@/utils';
+import { ErrorCode, Role } from '@/common/enums';
+import { AuthGuard } from '@/modules/auth/auth.guard';
+import { Roles } from '@/modules/auth/roles.decorator';
+import { RolesGuard } from '@/modules/auth/roles.guard';
+import { User } from '@/modules/user/entities/user.entity';
 
 import { SharingWorkspaceService } from './sharing-workspace.service';
 import { CreateSharingWorkspaceDto, ConfirmSharingWorkspaceDto } from './dtos';
@@ -37,10 +36,9 @@ export class SharingWorkspaceController {
   @HttpCode(200)
   async create(
     @Body() createSharingWorkspaceDto: CreateSharingWorkspaceDto,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
       await this.sharingWorkspaceService.create(
         user.id,
         createSharingWorkspaceDto,

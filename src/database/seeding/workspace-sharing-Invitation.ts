@@ -1,11 +1,14 @@
-import { AppDataSource } from 'typeorm.config';
 import { faker } from '@faker-js/faker';
+import { AppDataSource } from 'typeorm.config';
 
+import { StatusInvitation } from '@/common/enums';
 import { User } from '@/modules/user/entities/user.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 import { WorkspaceSharingInvitation } from '@/modules/sharing-workspace/entities/sharing-workspace.entity';
 function getRandomStatus() {
-  return Math.random() < 0.5 ? 'PENDING' : 'ACCEPTED';
+  return Math.random() < 0.5
+    ? StatusInvitation.PENDING
+    : StatusInvitation.ACCEPTED;
 }
 
 export async function seedWorkspaceInvitations() {

@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  Req,
   BadRequestException,
   UseGuards,
   Get,
@@ -10,26 +9,25 @@ import {
   Param,
   Put,
   Delete,
+  HttpStatus,
 } from '@nestjs/common';
-
 import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { Request } from 'express';
-
-import { ErrorCode } from '@/common/enums';
-
-import { handleDataResponse } from '@/utils';
-
 import { Role } from '@/common/enums';
-import { Roles } from '@/modules/auth/roles.decorator';
-
-import { RolesGuard } from '@/modules/auth/roles.guard';
+import { PoliciesGuard } from '@/guards';
+import { CurrentUser } from '@/decorators';
+import { handleDataResponse } from '@/utils';
+import { CheckPolicies } from '@/decorators';
 import { AuthGuard } from '@/modules/auth/auth.guard';
+import { ErrorCode, RoleAccess } from '@/common/enums';
+import { Roles } from '@/modules/auth/roles.decorator';
+import { RolesGuard } from '@/modules/auth/roles.guard';
+import { User } from '@/modules/user/entities/user.entity';
 
-import { AccountService } from './account.service';
-
-import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto';
+import { AccountService } from './account.service';
+import { Account } from './entities/account.entity';
+import { CreateAccountDto } from './dto/create-account.dto';
 
 @ApiTags('Account')
 @Controller('accounts')
@@ -45,11 +43,9 @@ export class AccountController {
   })
   async storeAccount(
     @Body() createAccountDto: CreateAccountDto,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
-
       await this.accountService.createAccountService(user, createAccountDto);
       return handleDataResponse('Store account successfully!', 'OK');
     } catch (error) {
@@ -63,17 +59,13 @@ export class AccountController {
 
   @Get('')
   @Roles(Role.User)
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'Get accounts successfully!',
   })
-  async getAccountsByUserId(@Req() request: Request) {
+  async getAccountsByUserId(@CurrentUser() user: User) {
     try {
-      const user = request['user'];
-      const listAccounts = await this.accountService.getAccountsByUserId(
-        user.id,
-      );
-      return listAccounts;
+      return this.accountService.getAccountsByUserId(user.id);
     } catch (error) {
       throw error;
     }
@@ -81,37 +73,34 @@ export class AccountController {
 
   @Get(':accountId')
   @Roles(Role.User)
-  @HttpCode(200)
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) => ability.can(RoleAccess.READ, Account))
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'Get account by id successfully!',
   })
-  async getAccountById(
-    @Param('accountId') accountId: string,
-    @Req() request: Request,
-  ) {
+  async getAccountById(@Param('accountId') accountId: string) {
     try {
-      const user = request['user'];
-      return await this.accountService.getAccountByUserIdAndAccountId(
-        user.id,
-        accountId,
-      );
+      return this.accountService.getAccountById(accountId);
     } catch (error) {
       throw new BadRequestException(error);
     }
   }
+
   @Put('update/:accountId')
   @Roles(Role.User)
-  @HttpCode(200)
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) => ability.can(RoleAccess.UPDATE, Account))
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'Update account successfully!',
   })
   async updateAccount(
     @Param('accountId') accountId: string,
-    @Req() request: Request,
+    @CurrentUser() user: User,
     @Body() updateAccountData: UpdateAccountDto,
   ) {
     try {
-      const user = request['user'];
       await this.accountService.updateAccount(
         user.id,
         accountId,
@@ -122,18 +111,18 @@ export class AccountController {
       throw error;
     }
   }
+
   @Delete('delete/:accountId')
   @Roles(Role.User)
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOkResponse({
     description: 'Delete account successfully!',
   })
   async softRemove(
     @Param('accountId') accountId: string,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
       await this.accountService.softRemove(user.id, accountId);
       return handleDataResponse('Delete account successfully', 'OK');
     } catch (error) {

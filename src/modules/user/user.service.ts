@@ -1,8 +1,9 @@
 import Redis from 'ioredis';
 import { Repository } from 'typeorm';
-import { TABLES } from '@/utils/constants';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
+import { TABLES } from '@/utils/constants';
 import { ErrorCode, Role, StatusTwoFa } from '@/common/enums';
 
 import { User } from './entities/user.entity';
@@ -107,7 +108,16 @@ export class UsersService {
       isSkippedTwoFa,
     };
   }
-
+  async findByIdWithRelations(userId: string): Promise<User> {
+    return this.userRepository.findOne({
+      where: { id: userId },
+      relations: [
+        'sharedAccounts',
+        'sharedAccounts.member',
+        'sharedAccounts.account',
+      ],
+    });
+  }
   async deactivateUser(userId: string) {
     const existedUser = await this.userRepository.findOne({
       where: { id: userId },

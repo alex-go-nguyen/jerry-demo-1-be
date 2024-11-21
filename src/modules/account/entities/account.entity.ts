@@ -1,4 +1,3 @@
-import { ApiProperty } from '@nestjs/swagger';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,20 +8,19 @@ import {
   JoinColumn,
   ManyToMany,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
+
 import { User } from '@/modules/user/entities/user.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
+import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
 
 @Entity()
 export class Account {
   @ApiProperty()
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @ApiProperty()
-  @ManyToOne(() => User, (user) => user.accounts, { onDelete: 'CASCADE' })
-  @JoinColumn()
-  user: User;
 
   @ApiProperty()
   @Column()
@@ -36,9 +34,6 @@ export class Account {
   @Column()
   password: string;
 
-  @ManyToMany(() => Workspace, (workspace) => workspace.accounts)
-  workspaces: Workspace[];
-
   @CreateDateColumn({ type: 'timestamptz' })
   @ApiProperty()
   createdAt: Date;
@@ -50,4 +45,19 @@ export class Account {
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   @ApiProperty()
   deletedAt?: Date;
+
+  @ApiProperty()
+  @ManyToOne(() => User, (user) => user.accounts, { onDelete: 'CASCADE' })
+  @JoinColumn()
+  owner: User;
+
+  @OneToMany(
+    () => AccountsSharingMembers,
+    (sharingMember) => sharingMember.account,
+  )
+  @ApiProperty()
+  members: AccountsSharingMembers[];
+
+  @ManyToMany(() => Workspace, (workspace) => workspace.accounts)
+  workspaces: Workspace[];
 }

@@ -1,21 +1,16 @@
-import { Injectable } from '@nestjs/common';
-
 import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
 
-import { ErrorCode, statusInvitationWorkspace } from '@/common/enums';
-
+import { envKeys } from '@/utils/constants';
 import { User } from '@/modules/user/entities/user.entity';
+import { ErrorCode, StatusInvitation } from '@/common/enums';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
-import { envKeys } from '@/utils/constants';
-
-import { WorkspaceSharingInvitation } from './entities/sharing-workspace.entity';
-
 import { CreateSharingWorkspaceDto, ConfirmSharingWorkspaceDto } from './dtos';
+import { WorkspaceSharingInvitation } from './entities/sharing-workspace.entity';
 
 @Injectable()
 export class SharingWorkspaceService {
@@ -55,7 +50,7 @@ export class SharingWorkspaceService {
         owner: workspace.owner,
         workspace: workspace,
         email: email,
-        status: statusInvitationWorkspace.PENDING,
+        status: StatusInvitation.PENDING,
       });
 
       const invitationSaved =
@@ -94,11 +89,11 @@ export class SharingWorkspaceService {
       throw new Error(ErrorCode.USER_NOT_FOUND);
     }
 
-    if (invitation.status === statusInvitationWorkspace.ACCEPTED) {
+    if (invitation.status === StatusInvitation.ACCEPTED) {
       throw new Error(ErrorCode.INVALID_LINK_EMAIL_VERIFICATION);
     }
 
-    invitation.status = statusInvitationWorkspace.ACCEPTED;
+    invitation.status = StatusInvitation.ACCEPTED;
     await this.workspaceSharingInvitationRepository.save(invitation);
 
     const workspace = await this.workspaceRepository.findOne({
