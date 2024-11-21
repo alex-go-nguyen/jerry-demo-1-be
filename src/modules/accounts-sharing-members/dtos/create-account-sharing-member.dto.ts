@@ -6,13 +6,11 @@ import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
 
 export class CreateAccountSharingMemberDto {
-  @IsString({ message: 'accountId must be a string' })
-  @IsNotEmpty({ message: 'accountId is required' })
+  @IsNotEmpty({ message: 'account is required' })
   @ApiProperty()
   account: Account;
 
-  @IsString({ message: 'memberId must be a string' })
-  @IsNotEmpty({ message: 'memberId is required' })
+  @IsNotEmpty({ message: 'member is required' })
   @ApiProperty()
   member: User;
 

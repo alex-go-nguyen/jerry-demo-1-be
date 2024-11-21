@@ -8,11 +8,11 @@ import {
   Param,
   Post,
   Put,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
+import { CurrentUser } from '@/decorators';
 import { handleDataResponse } from '@/utils';
 import { ErrorCode, Role } from '@/common/enums';
 import { AuthGuard } from '@/modules/auth/auth.guard';
@@ -37,10 +37,9 @@ export class ContactInfoController {
   })
   async storeAccount(
     @Body() createContactInfoDto: CreateContactInfoDto,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'] as User;
       await this.contactInfoService.create(user, createContactInfoDto);
       return handleDataResponse('Store contact info successfully!', 'OK');
     } catch (error) {
@@ -54,9 +53,8 @@ export class ContactInfoController {
   @ApiOkResponse({
     description: 'Get contact info successfully!',
   })
-  async getContactInfoByUserId(@Req() request: Request) {
+  async getContactInfoByUserId(@CurrentUser() user: User) {
     try {
-      const user = request['user'];
       return this.contactInfoService.getContactInfoByUserId(user.id);
     } catch (error) {
       throw error;
@@ -71,10 +69,9 @@ export class ContactInfoController {
   })
   async getContactInfoById(
     @Param('contactInfoId') contactInfoId: string,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
       return this.contactInfoService.getContactInfoById(user.id, contactInfoId);
     } catch (error) {
       if (error.message === ErrorCode.CONTACT_INFO_NOT_FOUND) {
@@ -92,12 +89,11 @@ export class ContactInfoController {
     description: 'Update contact info successfully!',
   })
   async update(
-    @Req() request: Request,
+    @CurrentUser() user: User,
     @Param('contactInfoId') contactInfoId: string,
     @Body() updateContactInfoData: UpdateContactInfoDto,
   ) {
     try {
-      const user = request['user'];
       await this.contactInfoService.update(
         user.id,
         contactInfoId,
@@ -120,11 +116,10 @@ export class ContactInfoController {
     description: 'Delete contact info successfully!',
   })
   async softRemove(
-    @Req() request: Request,
+    @CurrentUser() user: User,
     @Param('contactInfoId') contactInfoId: string,
   ) {
     try {
-      const user = request['user'];
       return this.contactInfoService.softRemove(user.id, contactInfoId);
     } catch (error) {
       if (error.message === ErrorCode.CONTACT_INFO_NOT_FOUND) {

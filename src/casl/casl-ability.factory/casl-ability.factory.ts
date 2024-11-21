@@ -9,6 +9,7 @@ import {
 import { Injectable } from '@nestjs/common';
 
 import { RoleAccess } from '@/common/enums';
+import { rolePermissionsMap } from '@/utils/constants';
 import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
 
@@ -25,17 +26,9 @@ export class CaslAbilityFactory {
 
     user.sharedAccounts.forEach((sharedAccount) => {
       const { accountId, roleAccess } = sharedAccount;
-
-      if (roleAccess === RoleAccess.Read) {
-        can(RoleAccess.Read, Account, { id: accountId });
-      } else if (roleAccess === RoleAccess.Update) {
-        can(RoleAccess.Read, Account, { id: accountId });
-        can(RoleAccess.Update, Account, { id: accountId });
-      } else if (roleAccess === RoleAccess.Manage) {
-        can(RoleAccess.Read, Account, { id: accountId });
-        can(RoleAccess.Update, Account, { id: accountId });
-        can(RoleAccess.Manage, Account, { id: accountId });
-      }
+      rolePermissionsMap[roleAccess].forEach((permission) => {
+        can(permission, Account, { id: accountId });
+      });
     });
 
     return build({

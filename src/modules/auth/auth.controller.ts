@@ -28,8 +28,6 @@ import {
 } from '@nestjs/swagger';
 import { Response } from 'express';
 
-import { handleDataResponse } from '@/utils';
-import { ErrorCode, Role } from '@/common/enums';
 import {
   ILoginResult,
   ILoginResultWith2FA,
@@ -42,6 +40,9 @@ import {
   ChangePasswordDto,
   ForgotPasswordDto,
 } from '@/modules/user/dtos';
+import { CurrentUser } from '@/decorators';
+import { handleDataResponse } from '@/utils';
+import { ErrorCode, Role } from '@/common/enums';
 import { AuthService } from '@/modules/auth/auth.service';
 import { User } from '@/modules/user/entities/user.entity';
 
@@ -136,9 +137,8 @@ export class AuthController {
   @Get('generate-qr')
   @HttpCode(200)
   @ApiOkResponse({ description: 'token' })
-  async generateQr(@Req() request: Request) {
+  async generateQr(@CurrentUser() user: User) {
     try {
-      const user = request['user'] as User;
       if (!user) {
         throw new UnauthorizedException(ErrorCode.USER_NOT_FOUND);
       }
@@ -173,9 +173,8 @@ export class AuthController {
   @Patch('enable-twofa')
   @HttpCode(200)
   @ApiOkResponse({ description: 'Enable two fa successfully!' })
-  async enableTwoFa(@Req() request: Request) {
+  async enableTwoFa(@CurrentUser() user: User) {
     try {
-      const user = request['user'] as User;
       await this.authService.enableTwoFa(user.id);
       return handleDataResponse('Your account have been enable two fa', 'OK');
     } catch (error) {
@@ -232,10 +231,9 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Missing input!' })
   async changePassword(
     @Body() changePasswordData: ChangePasswordDto,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
       await this.authService.changePassword(user.id, changePasswordData);
       return handleDataResponse('Change password successfully', 'OK');
     } catch (error) {

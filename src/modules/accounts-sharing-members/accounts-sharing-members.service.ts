@@ -16,13 +16,11 @@ export class AccountsSharingMembersService {
   ) {}
 
   async create(accountSharingMemberData: CreateAccountSharingMemberDto) {
-    return await this.accountsSharingMembersRepository.save(
-      accountSharingMemberData,
-    );
+    return this.accountsSharingMembersRepository.save(accountSharingMemberData);
   }
 
   async getAccountsByMember(memberId: string) {
-    return await this.accountsSharingMembersRepository.find({
+    return this.accountsSharingMembersRepository.find({
       where: {
         memberId,
       },

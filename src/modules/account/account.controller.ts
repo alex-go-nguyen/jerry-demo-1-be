@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  Req,
   BadRequestException,
   UseGuards,
   Get,
@@ -10,18 +9,20 @@ import {
   Param,
   Put,
   Delete,
+  HttpStatus,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '@/common/enums';
 import { PoliciesGuard } from '@/guards';
+import { CurrentUser } from '@/decorators';
 import { handleDataResponse } from '@/utils';
 import { CheckPolicies } from '@/decorators';
 import { AuthGuard } from '@/modules/auth/auth.guard';
 import { ErrorCode, RoleAccess } from '@/common/enums';
 import { Roles } from '@/modules/auth/roles.decorator';
 import { RolesGuard } from '@/modules/auth/roles.guard';
+import { User } from '@/modules/user/entities/user.entity';
 
 import { UpdateAccountDto } from './dto';
 import { AccountService } from './account.service';
@@ -42,11 +43,9 @@ export class AccountController {
   })
   async storeAccount(
     @Body() createAccountDto: CreateAccountDto,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
-
       await this.accountService.createAccountService(user, createAccountDto);
       return handleDataResponse('Store account successfully!', 'OK');
     } catch (error) {
@@ -60,13 +59,12 @@ export class AccountController {
 
   @Get('')
   @Roles(Role.User)
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'Get accounts successfully!',
   })
-  async getAccountsByUserId(@Req() request: Request) {
+  async getAccountsByUserId(@CurrentUser() user: User) {
     try {
-      const user = request['user'];
       return this.accountService.getAccountsByUserId(user.id);
     } catch (error) {
       throw error;
@@ -76,8 +74,8 @@ export class AccountController {
   @Get(':accountId')
   @Roles(Role.User)
   @UseGuards(PoliciesGuard)
-  @CheckPolicies((ability) => ability.can(RoleAccess.Read, Account))
-  @HttpCode(200)
+  @CheckPolicies((ability) => ability.can(RoleAccess.READ, Account))
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'Get account by id successfully!',
   })
@@ -92,18 +90,17 @@ export class AccountController {
   @Put('update/:accountId')
   @Roles(Role.User)
   @UseGuards(PoliciesGuard)
-  @CheckPolicies((ability) => ability.can(RoleAccess.Update, Account))
-  @HttpCode(200)
+  @CheckPolicies((ability) => ability.can(RoleAccess.UPDATE, Account))
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'Update account successfully!',
   })
   async updateAccount(
     @Param('accountId') accountId: string,
-    @Req() request: Request,
+    @CurrentUser() user: User,
     @Body() updateAccountData: UpdateAccountDto,
   ) {
     try {
-      const user = request['user'];
       await this.accountService.updateAccount(
         user.id,
         accountId,
@@ -117,16 +114,15 @@ export class AccountController {
 
   @Delete('delete/:accountId')
   @Roles(Role.User)
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOkResponse({
     description: 'Delete account successfully!',
   })
   async softRemove(
     @Param('accountId') accountId: string,
-    @Req() request: Request,
+    @CurrentUser() user: User,
   ) {
     try {
-      const user = request['user'];
       await this.accountService.softRemove(user.id, accountId);
       return handleDataResponse('Delete account successfully', 'OK');
     } catch (error) {

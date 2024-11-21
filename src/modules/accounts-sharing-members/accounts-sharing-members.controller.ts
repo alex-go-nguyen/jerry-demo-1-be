@@ -23,7 +23,7 @@ export class AccountsSharingMembersController {
   @Patch(':accountId')
   @Roles(Role.User)
   @UseGuards(AuthGuard, RolesGuard, PoliciesGuard)
-  @CheckPolicies((ability) => ability.can(RoleAccess.Manage, Account))
+  @CheckPolicies((ability) => ability.can(RoleAccess.MANAGE, Account))
   @ApiCreatedResponse({
     description: 'Update acount sharing member successfully!',
   })

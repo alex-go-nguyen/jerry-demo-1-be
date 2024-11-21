@@ -35,7 +35,7 @@ export class AccountsSharingInvitations {
   @Column({
     type: 'enum',
     enum: RoleAccess,
-    default: RoleAccess.Read,
+    default: RoleAccess.READ,
   })
   roleAccess: RoleAccess;
 

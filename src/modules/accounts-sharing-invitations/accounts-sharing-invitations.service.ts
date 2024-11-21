@@ -131,16 +131,16 @@ export class AccountsSharingInvitationsService {
       throw new Error(ErrorCode.INVITATION_NOT_FOUND);
     }
 
+    if (invitation.status !== StatusInvitation.PENDING) {
+      throw new Error(ErrorCode.INVALID_LINK_CONFIRM_INVITATION);
+    }
+
     const user = await this.userRepository.findOne({
       where: { email: invitation.email },
     });
 
     if (!user) {
       throw new Error(ErrorCode.USER_NOT_FOUND);
-    }
-
-    if (invitation.status === StatusInvitation.ACCEPTED) {
-      throw new Error(ErrorCode.INVALID_LINK_CONFIRM_INVITATION);
     }
 
     invitation.status = StatusInvitation.ACCEPTED;

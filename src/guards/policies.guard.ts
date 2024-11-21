@@ -31,12 +31,14 @@ export class PoliciesGuard implements CanActivate {
       ) || [];
 
     const request = context.switchToHttp().getRequest();
-    const { user, params } = request;
+    const { user, params, body } = request;
 
-    const isOwner = await this.accountService.checkOwner(
-      user.id,
-      params.accountId,
-    );
+    const accountId = params.accountId || body.accountId;
+
+    const isOwner = await this.accountService.checkOwner({
+      ownerId: user.id,
+      accountId,
+    });
 
     if (isOwner) {
       return true;
@@ -62,7 +64,7 @@ export class PoliciesGuard implements CanActivate {
     const hasAccess = this.checkPermissions(ability, params.accountId);
 
     const isPolicyValid = policyHandlers.every((handler) => {
-      return this.execPolicyHandler(handler, ability);
+      this.execPolicyHandler(handler, ability);
     });
 
     if (!isPolicyValid || !hasAccess) {
@@ -75,23 +77,11 @@ export class PoliciesGuard implements CanActivate {
   }
 
   private checkPermissions(ability: AppAbility, accountId: string): boolean {
-    const canRead = ability.can(RoleAccess.Read, Account, accountId);
-    const canUpdate = ability.can(RoleAccess.Update, Account, accountId);
-    const canManage = ability.can(RoleAccess.Manage, Account, accountId);
-
-    if (canManage) {
-      return true;
-    }
-
-    if (canUpdate && canRead) {
-      return true;
-    }
-
-    if (canRead) {
-      return true;
-    }
-
-    return false;
+    return (
+      ability.can(RoleAccess.MANAGE, Account, accountId) ||
+      ability.can(RoleAccess.UPDATE, Account, accountId) ||
+      ability.can(RoleAccess.READ, Account, accountId)
+    );
   }
 
   private execPolicyHandler(

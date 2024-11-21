@@ -8,6 +8,10 @@ import { EncryptionService } from '@/encryption/encryption.service';
 import { Account } from './entities/account.entity';
 import { CreateAccountDto, UpdateAccountDto } from './dto';
 
+export type CheckOwnerParams = {
+  ownerId: string;
+  accountId: string;
+};
 @Injectable()
 export class AccountService {
   constructor(
@@ -31,10 +35,9 @@ export class AccountService {
     await this.accountRepository.save(newAccount);
   }
 
-  async checkOwner(ownerId: string, accountId: string): Promise<boolean> {
+  async checkOwner({ ownerId, accountId }: CheckOwnerParams): Promise<boolean> {
     const account = await this.accountRepository.findOne({
       where: { id: accountId, owner: { id: ownerId } },
-      relations: ['owner'],
     });
     return !!account;
   }

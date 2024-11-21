@@ -19,6 +19,7 @@ import { LoginHistoryModule } from '@/modules/login-history/login-history.module
 import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-workspace.module';
 import { AccountsSharingMembersModule } from '@/modules/accounts-sharing-members/accounts-sharing-members.module';
 import { AccountsSharingInvitationsModule } from '@/modules/accounts-sharing-invitations/accounts-sharing-invitations.module';
+
 @Module({
   imports: [
     NestjsFingerprintModule.forRoot({

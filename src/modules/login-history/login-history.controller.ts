@@ -14,10 +14,12 @@ import { ApiTags } from '@nestjs/swagger';
 import { Fingerprint, IFingerprint } from 'nestjs-fingerprint';
 
 import { Role } from '@/common/enums';
+import { CurrentUser } from '@/decorators';
 import { handleDataResponse } from '@/utils';
 import { AuthGuard } from '@/modules/auth/auth.guard';
 import { Roles } from '@/modules/auth/roles.decorator';
 import { RolesGuard } from '@/modules/auth/roles.guard';
+import { User } from '@/modules/user/entities/user.entity';
 
 import { CreateLoginHistoryDto } from './dtos';
 import { LoginHistoryService } from './login-history.service';
@@ -31,13 +33,13 @@ export class LoginHistoryController {
   @Post('store')
   @Roles(Role.User)
   async create(
+    @CurrentUser() user: User,
     @Req() request: Request,
     @Ip() ipAddress: string,
     @Fingerprint() fp: IFingerprint,
     @Body() createLoginHistoryData: CreateLoginHistoryDto,
   ) {
     try {
-      const user = request['user'];
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
@@ -57,9 +59,8 @@ export class LoginHistoryController {
   @Get('')
   @Roles(Role.User)
   @HttpCode(200)
-  async getLoginHistory(@Req() request: Request) {
+  async getLoginHistory(@CurrentUser() user: User) {
     try {
-      const user = request['user'];
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
@@ -74,11 +75,10 @@ export class LoginHistoryController {
   @Roles(Role.User)
   @HttpCode(204)
   async bulkSoftDelete(
-    @Req() request: Request,
+    @CurrentUser() user: User,
     @Body() loginHistoryIds: string[],
   ) {
     try {
-      const user = request['user'];
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
