@@ -1,9 +1,12 @@
-import { AppAbility } from '@/casl/casl-ability.factory';
+import { AccountAbility } from '@/casl/casl-ability.factory';
+import { WorkspaceAbility } from '@/casl/casl-ability-workspace';
 
 interface IPolicyHandler {
-  handle(ability: AppAbility): boolean;
+  handle(ability: AccountAbility | WorkspaceAbility): boolean;
 }
 
-type PolicyHandlerCallback = (ability: AppAbility) => boolean;
+type PolicyHandlerCallback = (
+  ability: AccountAbility | WorkspaceAbility,
+) => boolean;
 
 export type PolicyHandler = IPolicyHandler | PolicyHandlerCallback;

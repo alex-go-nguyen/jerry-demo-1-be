@@ -13,12 +13,10 @@ export class AccountsSharingMembers {
   @PrimaryColumn()
   memberId: string;
 
-  @ManyToOne(() => Account, (account) => account.members, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => Account, (account) => account.members)
   account: Account;
 
-  @ManyToOne(() => User, (user) => user.accounts, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.accounts)
   member: User;
 
   @Column({

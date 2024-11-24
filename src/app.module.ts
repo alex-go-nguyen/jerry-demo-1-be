@@ -16,10 +16,10 @@ import { WorkspaceModule } from '@/modules/workspace/workspace.module';
 import { TwoFactorAuthModule } from '@/modules/user-twofa/user-twofa.module';
 import { ContactInfoModule } from '@/modules/contact-info/contact-info.module';
 import { LoginHistoryModule } from '@/modules/login-history/login-history.module';
-import { SharingWorkspaceModule } from '@/modules/sharing-workspace/sharing-workspace.module';
 import { AccountsSharingMembersModule } from '@/modules/accounts-sharing-members/accounts-sharing-members.module';
+import { WorkspacesSharingMembersModule } from './modules/workspaces-sharing-members/workspaces-sharing-members.module';
+import { SharingWorkspaceModule } from '@/modules/workspaces-sharing-invitations/workspaces-sharing-invitations.module';
 import { AccountsSharingInvitationsModule } from '@/modules/accounts-sharing-invitations/accounts-sharing-invitations.module';
-
 @Module({
   imports: [
     NestjsFingerprintModule.forRoot({
@@ -75,6 +75,7 @@ import { AccountsSharingInvitationsModule } from '@/modules/accounts-sharing-inv
     CaslModule,
     AccountsSharingMembersModule,
     AccountsSharingInvitationsModule,
+    WorkspacesSharingMembersModule,
   ],
 
   providers: [

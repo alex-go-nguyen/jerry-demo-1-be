@@ -4,7 +4,7 @@ import { AppDataSource } from 'typeorm.config';
 import { StatusInvitation } from '@/common/enums';
 import { User } from '@/modules/user/entities/user.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
-import { WorkspaceSharingInvitation } from '@/modules/sharing-workspace/entities/sharing-workspace.entity';
+import { WorkspacesSharingInvitations } from '@/modules/workspaces-sharing-invitations/entities/workspaces-sharing-invitations.entity';
 function getRandomStatus() {
   return Math.random() < 0.5
     ? StatusInvitation.PENDING
@@ -15,7 +15,7 @@ export async function seedWorkspaceInvitations() {
   const userRepository = AppDataSource.getRepository(User);
   const workspaceRepository = AppDataSource.getRepository(Workspace);
   const invitationRepository = AppDataSource.getRepository(
-    WorkspaceSharingInvitation,
+    WorkspacesSharingInvitations,
   );
   const users = await userRepository.find();
   const workspaces: Workspace[] = [];
@@ -49,7 +49,6 @@ export async function seedWorkspaceInvitations() {
         });
 
         if (workspace) {
-          workspace.members.push(user);
           await workspaceRepository.save(workspace);
         }
       }

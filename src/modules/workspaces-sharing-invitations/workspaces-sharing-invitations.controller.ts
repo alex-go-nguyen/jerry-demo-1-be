@@ -1,41 +1,45 @@
-import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
-
 import {
   Controller,
   Post,
   Body,
   UseGuards,
-  NotFoundException,
   HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
+import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 
-import { CurrentUser } from '@/decorators';
 import { handleDataResponse } from '@/utils';
-import { ErrorCode, Role } from '@/common/enums';
+import { Role, RoleAccess } from '@/common/enums';
+import { PoliciesWorkspaceGuard } from '@/guards';
 import { AuthGuard } from '@/modules/auth/auth.guard';
 import { Roles } from '@/modules/auth/roles.decorator';
 import { RolesGuard } from '@/modules/auth/roles.guard';
+import { CheckPolicies, CurrentUser } from '@/decorators';
 import { User } from '@/modules/user/entities/user.entity';
+import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
-import { SharingWorkspaceService } from './sharing-workspace.service';
-import { CreateSharingWorkspaceDto, ConfirmSharingWorkspaceDto } from './dtos';
+import {
+  CreateWorkspacesSharingInvitationsDto,
+  ConfirmWorkspaceSharingInvitationDto,
+} from './dtos';
+import { SharingWorkspaceService } from './workspaces-sharing-invitations.service';
 
-@ApiTags('SharingWorkspace')
-@Controller('sharing-workspace')
+@ApiTags('WorkspaceSharingInvitation')
+@Controller('workspaces-sharing')
 export class SharingWorkspaceController {
   constructor(
     private readonly sharingWorkspaceService: SharingWorkspaceService,
   ) {}
 
   @Post('create')
-  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.User)
+  @UseGuards(AuthGuard, RolesGuard, PoliciesWorkspaceGuard)
+  @CheckPolicies((ability) => ability.can(RoleAccess.MANAGE, Workspace))
   @ApiCreatedResponse({
     description: 'Invite to workspace successfully!',
   })
-  @HttpCode(200)
   async create(
-    @Body() createSharingWorkspaceDto: CreateSharingWorkspaceDto,
+    @Body() createSharingWorkspaceDto: CreateWorkspacesSharingInvitationsDto,
     @CurrentUser() user: User,
   ) {
     try {
@@ -45,9 +49,6 @@ export class SharingWorkspaceController {
       );
       return handleDataResponse('Invite members successfully', 'OK');
     } catch (error) {
-      if (error.message === ErrorCode.WORKSPACE_NOT_FOUND) {
-        throw new NotFoundException(ErrorCode.WORKSPACE_NOT_FOUND);
-      }
       throw error;
     }
   }
@@ -56,9 +57,9 @@ export class SharingWorkspaceController {
   @ApiCreatedResponse({
     description: 'Invite to workspace successfully!',
   })
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   async confirm(
-    @Body() confirmSharingWorkspaceData: ConfirmSharingWorkspaceDto,
+    @Body() confirmSharingWorkspaceData: ConfirmWorkspaceSharingInvitationDto,
   ) {
     try {
       await this.sharingWorkspaceService.confirmInvitation(
@@ -66,14 +67,7 @@ export class SharingWorkspaceController {
       );
       return handleDataResponse('Invitation accepted successfully', 'OK');
     } catch (error) {
-      if (
-        error.message === ErrorCode.INVITATION_NOT_FOUND ||
-        error.message === ErrorCode.USER_NOT_FOUND
-      ) {
-        throw new NotFoundException(ErrorCode.INVITATION_NOT_FOUND);
-      } else {
-        throw error;
-      }
+      throw error;
     }
   }
 }

@@ -9,9 +9,12 @@ import { Reflector } from '@nestjs/core';
 import { RoleAccess } from '@/common/enums';
 import { PolicyHandler } from '@/interfaces';
 import { CHECK_POLICIES_KEY } from '@/decorators';
+import {
+  CaslAbilityFactory,
+  AccountAbility,
+} from '@/casl/casl-ability.factory';
 import { AccountService } from '@/modules/account/account.service';
 import { Account } from '@/modules/account/entities/account.entity';
-import { CaslAbilityFactory, AppAbility } from '@/casl/casl-ability.factory';
 import { AccountsSharingMembersService } from '@/modules/accounts-sharing-members/accounts-sharing-members.service';
 
 @Injectable()
@@ -48,7 +51,7 @@ export class PoliciesGuard implements CanActivate {
       await this.accountsSharingMembersService.getAccountsByMember(user.id);
 
     const isSharedAccount = sharedAccounts.some(
-      (sharedAccount) => sharedAccount.accountId === params.accountId,
+      (sharedAccount) => sharedAccount.accountId === accountId,
     );
 
     if (!isSharedAccount) {
@@ -61,10 +64,10 @@ export class PoliciesGuard implements CanActivate {
 
     const ability = this.caslAbilityFactory.createForUser(user);
 
-    const hasAccess = this.checkPermissions(ability, params.accountId);
+    const hasAccess = this.checkPermissions(ability, accountId);
 
     const isPolicyValid = policyHandlers.every((handler) => {
-      this.execPolicyHandler(handler, ability);
+      return this.execPolicyHandler(handler, ability);
     });
 
     if (!isPolicyValid || !hasAccess) {
@@ -76,7 +79,10 @@ export class PoliciesGuard implements CanActivate {
     return true;
   }
 
-  private checkPermissions(ability: AppAbility, accountId: string): boolean {
+  private checkPermissions(
+    ability: AccountAbility,
+    accountId: string,
+  ): boolean {
     return (
       ability.can(RoleAccess.MANAGE, Account, accountId) ||
       ability.can(RoleAccess.UPDATE, Account, accountId) ||
@@ -86,7 +92,7 @@ export class PoliciesGuard implements CanActivate {
 
   private execPolicyHandler(
     handler: PolicyHandler,
-    ability: AppAbility,
+    ability: AccountAbility,
   ): boolean {
     if (typeof handler === 'function') {
       return handler(ability);
