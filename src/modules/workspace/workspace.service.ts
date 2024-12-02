@@ -128,19 +128,10 @@ export class WorkspaceService {
   }
 
   async update(updateWorkspaceDto: UpdateWorkspaceDto) {
-    const {
-      workspaceId,
-      name,
-      userId,
-      accounts: accountIds,
-    } = updateWorkspaceDto;
+    const { workspaceId, name, accounts: accountIds } = updateWorkspaceDto;
 
     const existedWorkspace = await this.workspaceRepository.findOne({
-      where: [
-        { id: workspaceId },
-        { owner: { id: userId } },
-        { members: { member: { id: userId } } },
-      ],
+      where: { id: workspaceId },
       relations: ['owner', 'accounts', 'members'],
     });
 
@@ -151,6 +142,8 @@ export class WorkspaceService {
     const currentAccountIds = existedWorkspace.accounts.map(
       (account) => account.id,
     );
+
+    existedWorkspace.name = name;
 
     if (!accountIds || accountIds.length === 0) {
       existedWorkspace.accounts = [];
@@ -165,12 +158,16 @@ export class WorkspaceService {
       return;
     }
 
-    const removedAccountIds = currentAccountIds.filter(
-      (accountId) => !accountIds.includes(accountId),
-    );
-
-    const newAccountIds = accountIds.filter(
-      (id) => !currentAccountIds.includes(id),
+    const { removedAccountIds, newAccountIds } = accountIds.reduce(
+      (acc, accountId) => {
+        if (currentAccountIds.includes(accountId)) {
+          acc.removedAccountIds.push(accountId);
+        } else {
+          acc.newAccountIds.push(accountId);
+        }
+        return acc;
+      },
+      { removedAccountIds: [], newAccountIds: [] },
     );
 
     const newAccounts = await this.accountRepository.find({
@@ -183,8 +180,6 @@ export class WorkspaceService {
       ),
       ...newAccounts,
     ];
-
-    existedWorkspace.name = name;
 
     await this.workspaceRepository.save(existedWorkspace);
 

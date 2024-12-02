@@ -32,10 +32,6 @@ export class AccountsSharingMembersService {
   ) {
     const { accountId, sharingMembers } = accountSharingMemberData;
 
-    if (!sharingMembers || sharingMembers.length === 0) {
-      throw new Error(ErrorCode.NO_SHARING_MEMBERS_PROVIDED);
-    }
-
     const existedSharingMembers =
       await this.accountsSharingMembersRepository.find({
         where: { account: { id: accountId } },

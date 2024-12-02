@@ -6,6 +6,7 @@ import {
   HttpCode,
   Ip,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -59,13 +60,12 @@ export class LoginHistoryController {
   @Get('')
   @Roles(Role.User)
   @HttpCode(200)
-  async getLoginHistory(@CurrentUser() user: User) {
+  async getLoginHistory(@CurrentUser() user: User, @Query() query) {
     try {
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
-
-      return this.loginHistoryService.findAll(user);
+      return this.loginHistoryService.findAll(user, query);
     } catch (error) {
       throw error;
     }

@@ -9,8 +9,6 @@ import { LRUCache } from 'lru-cache';
 
 import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
 
-import { TwoFactorAuthModule } from '@/modules/user-twofa/user-twofa.module';
-
 import { User } from '@/modules/user/entities/user.entity';
 import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
@@ -28,7 +26,6 @@ import { AuthController } from './auth.controller';
         secret: configService.get<string>('JWT_SECRET'),
       }),
     }),
-    TwoFactorAuthModule,
   ],
   providers: [
     AuthService,

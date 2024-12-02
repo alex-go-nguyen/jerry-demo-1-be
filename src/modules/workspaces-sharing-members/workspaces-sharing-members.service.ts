@@ -69,9 +69,11 @@ export class WorkspacesSharingMembersService {
     if (sharingMembers.length !== existedSharingMembers.length) {
       const incomingMemberIds = sharingMembers.map((member) => member.id);
 
+      const incomingMemberIdsSet = new Set(incomingMemberIds);
+
       const membersToDelete = existedSharingMembers.filter(
         (existedSharingMember) =>
-          !incomingMemberIds.includes(existedSharingMember.member.id),
+          !incomingMemberIdsSet.has(existedSharingMember.member.id),
       );
 
       const deleteMemberPromises = membersToDelete.map((memberToDelete) =>

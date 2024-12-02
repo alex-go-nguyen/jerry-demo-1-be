@@ -38,16 +38,12 @@ export class WorkspacesSharingMembersController {
   async updateRoleAccess(
     @Body() accountSharingMemberData: UpdateWorkspaceSharingMemberDto,
   ) {
-    try {
-      await this.workspacesSharingMembersService.updateRoleAccess(
-        accountSharingMemberData,
-      );
-      return handleDataResponse(
-        'Update workspace sharing member successfully!',
-        'OK',
-      );
-    } catch (error) {
-      throw error;
-    }
+    await this.workspacesSharingMembersService.updateRoleAccess(
+      accountSharingMemberData,
+    );
+    return handleDataResponse(
+      'Update workspace sharing member successfully!',
+      'OK',
+    );
   }
 }
