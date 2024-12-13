@@ -3,3 +3,6 @@ export * from './roles.enum';
 export * from './status-two-fa.enum';
 export * from './status-invitation';
 export * from './permission-action.enum';
+export * from './type-high-level-password.enum';
+export * from './activity-type';
+export * from './entity-type';

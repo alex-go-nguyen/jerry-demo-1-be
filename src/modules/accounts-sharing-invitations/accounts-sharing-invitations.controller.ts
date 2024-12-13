@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -24,7 +27,7 @@ import {
 } from './dtos';
 import { AccountsSharingInvitationsService } from './accounts-sharing-invitations.service';
 
-@ApiTags('SharingAccountInvitation')
+@ApiTags('AccountSharingInvitation')
 @Controller('accounts-sharing')
 export class AccountsSharingInvitationsController {
   constructor(
@@ -44,7 +47,7 @@ export class AccountsSharingInvitationsController {
   ) {
     try {
       await this.accountsSharingInvitationsService.create(
-        user.id,
+        user,
         accountsSharingInvitationsData,
       );
       return handleDataResponse('Invite members successfully', 'OK');
@@ -67,5 +70,25 @@ export class AccountsSharingInvitationsController {
     } catch (error) {
       throw error;
     }
+  }
+
+  @Patch('decline-invitation/:inviteId')
+  @ApiCreatedResponse({
+    description: 'Decline invitation to account successfully!',
+  })
+  @HttpCode(HttpStatus.OK)
+  async decline(@Param('inviteId') inviteId: string) {
+    await this.accountsSharingInvitationsService.declineInvitation(inviteId);
+    return handleDataResponse('Invitation declined successfully', 'OK');
+  }
+
+  @Get('')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.User)
+  @HttpCode(HttpStatus.OK)
+  async getPendingInvitations(@CurrentUser() user: User) {
+    return this.accountsSharingInvitationsService.getPendingIvitation(
+      user.email,
+    );
   }
 }
