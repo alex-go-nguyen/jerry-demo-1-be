@@ -49,10 +49,8 @@ export class WorkspaceController {
     @Body() createWorkspaceDto: CreateWorkspaceDto,
     @CurrentUser() user: User,
   ) {
-    createWorkspaceDto.userId = user.id;
-
     try {
-      await this.workspaceService.create(createWorkspaceDto);
+      await this.workspaceService.create(user.id, createWorkspaceDto);
       return handleDataResponse('Create workspace successfully', 'OK');
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -92,13 +90,15 @@ export class WorkspaceController {
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
   async update(
     @Param('workspaceId') workspaceId: string,
-    @Body() updateWorkspaceDto: UpdateWorkspaceDto,
+    @Body() updateWorkspaceData: UpdateWorkspaceDto,
     @CurrentUser() user: User,
   ) {
     try {
-      updateWorkspaceDto.userId = user.id;
-      updateWorkspaceDto.workspaceId = workspaceId;
-      await this.workspaceService.update(updateWorkspaceDto);
+      await this.workspaceService.update(
+        workspaceId,
+        user,
+        updateWorkspaceData,
+      );
       return handleDataResponse('Update workspace successfully', 'OK');
     } catch (error) {
       throw error;

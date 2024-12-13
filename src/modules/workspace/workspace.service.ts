@@ -2,9 +2,17 @@ import { In, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { ErrorCode } from '@/common/enums';
+import {
+  ActivityType,
+  EntityType,
+  ErrorCode,
+  RoleAccess,
+} from '@/common/enums';
 import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
+import { NotificationGateway } from '@/modules/notification/notification.gateway';
+import { NotificationService } from '@/modules/notification/notification.service';
+import { MemberActivityLogService } from '@/modules/member-activity-log/member-activity-log.service';
 import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
 import { WorkspacesSharingMembersService } from '@/modules/workspaces-sharing-members/workspaces-sharing-members.service';
 import { WorkspacesSharingMembers } from '@/modules/workspaces-sharing-members/entities/workspaces-sharing-members.entity';
@@ -37,9 +45,16 @@ export class WorkspaceService {
     private accountsSharingMembersRepository: Repository<AccountsSharingMembers>,
 
     private readonly workspacesSharingMembersService: WorkspacesSharingMembersService,
+
+    private readonly memberActivityLogService: MemberActivityLogService,
+
+    private readonly notificationService: NotificationService,
+
+    private readonly notificationGateway: NotificationGateway,
   ) {}
-  async create(createWorkspaceDto: CreateWorkspaceDto) {
-    const { name, userId, accounts: accountIds } = createWorkspaceDto;
+
+  async create(userId: string, createWorkspaceData: CreateWorkspaceDto) {
+    const { name, accounts: accountIds } = createWorkspaceData;
 
     const owner = await this.userRepository.findOneBy({ id: userId });
 
@@ -79,6 +94,7 @@ export class WorkspaceService {
       select: {
         id: true,
         name: true,
+        createdAt: true,
         owner: { id: true, name: true, email: true, avatar: true },
       },
     });
@@ -127,8 +143,12 @@ export class WorkspaceService {
     }));
   }
 
-  async update(updateWorkspaceDto: UpdateWorkspaceDto) {
-    const { workspaceId, name, accounts: accountIds } = updateWorkspaceDto;
+  async update(
+    workspaceId: string,
+    user: User,
+    updateWorkspaceData: UpdateWorkspaceDto,
+  ) {
+    const { name, accounts: accountIds } = updateWorkspaceData;
 
     const existedWorkspace = await this.workspaceRepository.findOne({
       where: { id: workspaceId },
@@ -157,19 +177,20 @@ export class WorkspaceService {
       );
       return;
     }
-
-    const { removedAccountIds, newAccountIds } = accountIds.reduce(
+    const { newAccountIds, removedAccountIds } = accountIds.reduce(
       (acc, accountId) => {
-        if (currentAccountIds.includes(accountId)) {
-          acc.removedAccountIds.push(accountId);
-        } else {
+        if (!currentAccountIds.includes(accountId)) {
           acc.newAccountIds.push(accountId);
         }
         return acc;
       },
-      { removedAccountIds: [], newAccountIds: [] },
+      {
+        newAccountIds: [],
+        removedAccountIds: currentAccountIds.filter(
+          (accountId) => !accountIds.includes(accountId),
+        ),
+      },
     );
-
     const newAccounts = await this.accountRepository.find({
       where: { id: In(newAccountIds) },
     });
@@ -186,6 +207,23 @@ export class WorkspaceService {
     await this.workspacesSharingMembersService.updateAccountsSharingFromWorkspace(
       { workspaceId, newAccountIds, removedAccountIds },
     );
+
+    if (user.id !== existedWorkspace.owner.id) {
+      const activityLog = await this.memberActivityLogService.create({
+        workspaceId: existedWorkspace.id,
+        entityType: EntityType.WORKSPACE,
+        action: RoleAccess.UPDATE,
+      });
+
+      const notification = await this.notificationService.createNotification({
+        receipient: existedWorkspace.owner.email,
+        sender: user,
+        activityType: ActivityType.UPDATE_AN_WORKSPACE,
+        activityLogId: activityLog.id,
+      });
+
+      this.notificationGateway.sendNotification(notification);
+    }
   }
 
   async softRemove(ownerId: string, workspaceId: string) {

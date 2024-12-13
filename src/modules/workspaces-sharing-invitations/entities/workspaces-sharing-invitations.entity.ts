@@ -19,7 +19,7 @@ export class WorkspacesSharingInvitations {
   @ManyToOne(() => User)
   owner: User;
 
-  @ManyToOne(() => Workspace)
+  @ManyToOne(() => Workspace, { onDelete: 'CASCADE' })
   workspace: Workspace;
 
   @Column()

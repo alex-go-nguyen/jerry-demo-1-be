@@ -1,32 +1,34 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateLoginHistoryDto {
   @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
+  @IsOptional()
+  @IsString({ message: 'ipAddress must be a string' })
   ipAddress?: string;
 
   @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Address is required' })
+  @IsString({ message: 'Address must be a string' })
   address: string;
 
   @ApiProperty()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'lat is required' })
   @IsNumber()
   lat: number;
 
   @ApiProperty()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'lon is required' })
   @IsNumber()
   lon: number;
 
   @ApiProperty()
-  @IsString()
+  @IsOptional()
+  @IsString({ message: 'userAgent must be a string' })
   userAgent?: string;
 
   @ApiProperty()
-  @IsString()
+  @IsOptional()
+  @IsString({ message: 'deviceId must be a string' })
   deviceId?: string;
 }

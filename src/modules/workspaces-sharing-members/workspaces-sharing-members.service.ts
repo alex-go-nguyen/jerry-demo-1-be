@@ -56,11 +56,6 @@ export class WorkspacesSharingMembersService {
     workspaceSharingMemberData: UpdateWorkspaceSharingMemberDto,
   ) {
     const { workspaceId, ownerId, sharingMembers } = workspaceSharingMemberData;
-
-    if (!sharingMembers || sharingMembers.length === 0) {
-      throw new Error(ErrorCode.NO_SHARING_MEMBERS_PROVIDED);
-    }
-
     const existedSharingMembers =
       await this.workspacesSharingMembersRepository.find({
         where: { workspaceId },
@@ -84,43 +79,44 @@ export class WorkspacesSharingMembersService {
       );
       await Promise.all(deleteMemberPromises);
     }
+    if (sharingMembers.length > 0) {
+      const updateMemberPromises = sharingMembers.map((sharingMember) =>
+        this.workspacesSharingMembersRepository
+          .update(
+            {
+              workspaceId,
+              member: { id: sharingMember.id },
+            },
+            {
+              roleAccess: sharingMember.roleAccess,
+            },
+          )
+          .then((result) => {
+            if (result.affected === 0) {
+              throw new Error(
+                `${ErrorCode.MEMBER_NOT_FOUND}: Member ID ${sharingMember.id} not found in workspace ${workspaceId}`,
+              );
+            }
+          }),
+      );
+      await Promise.all(updateMemberPromises);
 
-    const updateMemberPromises = sharingMembers.map((sharingMember) =>
-      this.workspacesSharingMembersRepository
-        .update(
-          {
-            workspaceId,
-            member: { id: sharingMember.id },
-          },
-          {
-            roleAccess: sharingMember.roleAccess,
-          },
-        )
-        .then((result) => {
-          if (result.affected === 0) {
-            throw new Error(
-              `${ErrorCode.MEMBER_NOT_FOUND}: Member ID ${sharingMember.id} not found in workspace ${workspaceId}`,
-            );
-          }
+      const {
+        workspace: { accounts: workspaceAccounts },
+      } = await this.workspacesSharingMembersRepository.findOne({
+        where: { workspace: { id: workspaceId } },
+        relations: ['workspace', 'workspace.accounts'],
+      });
+
+      const syncAccountRolePromises = workspaceAccounts.map((account) =>
+        this.accountsSharingMembersService.updateRoleAccess({
+          accountId: account.id,
+          ownerId,
+          sharingMembers,
         }),
-    );
-    await Promise.all(updateMemberPromises);
-
-    const {
-      workspace: { accounts: workspaceAccounts },
-    } = await this.workspacesSharingMembersRepository.findOne({
-      where: { workspace: { id: workspaceId } },
-      relations: ['workspace', 'workspace.accounts'],
-    });
-
-    const syncAccountRolePromises = workspaceAccounts.map((account) =>
-      this.accountsSharingMembersService.updateRoleAccess({
-        accountId: account.id,
-        ownerId,
-        sharingMembers,
-      }),
-    );
-    await Promise.all(syncAccountRolePromises);
+      );
+      await Promise.all(syncAccountRolePromises);
+    }
   }
 
   async updateAccountsSharingFromWorkspace({
