@@ -80,7 +80,7 @@ export class UsersService {
   async findById(userId: string) {
     const existedUser = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['userTwoFa'],
+      relations: ['userTwoFa', 'highLevelPasswords'],
     });
     const {
       id,
@@ -89,6 +89,7 @@ export class UsersService {
       email,
       avatar,
       phoneNumber,
+      highLevelPasswords,
       userTwoFa: { status },
     } = existedUser;
 
@@ -105,6 +106,11 @@ export class UsersService {
       avatar,
       status,
       phoneNumber,
+      highLevelPasswords: highLevelPasswords.map((highLevelPassword) => ({
+        methodSecureId: highLevelPassword.id,
+        type: highLevelPassword.type,
+        status: highLevelPassword.status,
+      })),
       isSkippedTwoFa,
     };
   }
