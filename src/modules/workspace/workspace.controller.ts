@@ -10,6 +10,7 @@ import {
   Put,
   HttpCode,
   Patch,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -18,15 +19,17 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { Role } from '@/common/enums';
-import { CurrentUser } from '@/decorators';
 import { handleDataResponse } from '@/utils';
+import { Role, RoleAccess } from '@/common/enums';
+import { PoliciesWorkspaceGuard } from '@/guards';
 import { AuthGuard } from '@/modules/auth/auth.guard';
 import { Roles } from '@/modules/auth/roles.decorator';
 import { RolesGuard } from '@/modules/auth/roles.guard';
+import { CheckPolicies, CurrentUser } from '@/decorators';
 import { User } from '@/modules/user/entities/user.entity';
 
 import { WorkspaceService } from './workspace.service';
+import { Workspace } from './entities/workspace.entity';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 
@@ -56,15 +59,36 @@ export class WorkspaceController {
     }
   }
 
+  @Get(':workspaceId')
+  @Roles(Role.User)
+  @UseGuards(PoliciesWorkspaceGuard)
+  @CheckPolicies((ability) => ability.can(RoleAccess.READ, Workspace))
+  @HttpCode(HttpStatus.OK)
+  @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
+  async findOne(@Param('workspaceId') workspaceId: string) {
+    try {
+      return await this.workspaceService.findOne(workspaceId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   @Get('')
   @Roles(Role.User)
+  @HttpCode(HttpStatus.OK)
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
   async findAll(@CurrentUser() user: User) {
-    return this.workspaceService.getWorkspacesByUserId(user.id);
+    try {
+      return await this.workspaceService.getWorkspacesByUserId(user.id);
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Put('update/:workspaceId')
   @Roles(Role.User)
+  @UseGuards(PoliciesWorkspaceGuard)
+  @CheckPolicies((ability) => ability.can(RoleAccess.UPDATE, Workspace))
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
   async update(
     @Param('workspaceId') workspaceId: string,
@@ -74,7 +98,6 @@ export class WorkspaceController {
     try {
       updateWorkspaceDto.userId = user.id;
       updateWorkspaceDto.workspaceId = workspaceId;
-
       await this.workspaceService.update(updateWorkspaceDto);
       return handleDataResponse('Update workspace successfully', 'OK');
     } catch (error) {
@@ -84,7 +107,7 @@ export class WorkspaceController {
 
   @Delete('soft-delete/:workspaceId')
   @Roles(Role.User)
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBadRequestResponse({ description: 'Missing input!' })
   async softRemove(
     @Param('workspaceId') workspaceId: string,

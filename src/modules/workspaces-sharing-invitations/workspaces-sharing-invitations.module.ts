@@ -5,15 +5,17 @@ import { CaslModule } from '@/casl/casl.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
+import { WorkspaceModule } from '@/modules/workspace/workspace.module';
+import { WorkspaceService } from '@/modules/workspace/workspace.service';
+import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 import { AccountsSharingMembersService } from '@/modules/accounts-sharing-members/accounts-sharing-members.service';
 import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
-import { WorkspacesSharingMembersModule } from '@/modules/workspaces-sharing-members/workspaces-sharing-members.module';
 import { WorkspacesSharingMembersService } from '@/modules/workspaces-sharing-members/workspaces-sharing-members.service';
 import { WorkspacesSharingMembers } from '@/modules/workspaces-sharing-members/entities/workspaces-sharing-members.entity';
 
-import { WorkspaceService } from './workspace.service';
-import { Workspace } from './entities/workspace.entity';
-import { WorkspaceController } from './workspace.controller';
+import { SharingWorkspaceService } from './workspaces-sharing-invitations.service';
+import { SharingWorkspaceController } from './workspaces-sharing-invitations.controller';
+import { WorkspacesSharingInvitations } from './entities/workspaces-sharing-invitations.entity';
 
 @Module({
   imports: [
@@ -21,18 +23,20 @@ import { WorkspaceController } from './workspace.controller';
       Workspace,
       User,
       Account,
+      WorkspacesSharingInvitations,
       WorkspacesSharingMembers,
       AccountsSharingMembers,
     ]),
     AuthModule,
+    WorkspaceModule,
     CaslModule,
-    WorkspacesSharingMembersModule,
   ],
-  controllers: [WorkspaceController],
+  controllers: [SharingWorkspaceController],
   providers: [
-    WorkspaceService,
+    SharingWorkspaceService,
     WorkspacesSharingMembersService,
     AccountsSharingMembersService,
+    WorkspaceService,
   ],
 })
-export class WorkspaceModule {}
+export class SharingWorkspaceModule {}

@@ -16,19 +16,19 @@ import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
 type Subjects = InferSubjects<typeof Account | typeof Workspace>;
 
-export type AccountAbility = PureAbility<[RoleAccess, Subjects]>;
+export type WorkspaceAbility = PureAbility<[RoleAccess, Subjects]>;
 
 @Injectable()
-export class CaslAbilityFactory {
-  createForUser(user: User): AccountAbility {
-    const { can, build } = new AbilityBuilder<AccountAbility>(
-      Ability as AbilityClass<AccountAbility>,
+export class CaslAbilityWorkspaceFactory {
+  createForUser(user: User): WorkspaceAbility {
+    const { can, build } = new AbilityBuilder<WorkspaceAbility>(
+      Ability as AbilityClass<WorkspaceAbility>,
     );
 
-    user.sharedAccounts.forEach((sharedAccount) => {
-      const { accountId, roleAccess } = sharedAccount;
+    user.sharedWorkspaces.forEach((sharedWorkspace) => {
+      const { workspaceId, roleAccess } = sharedWorkspace;
       rolePermissionsMap[roleAccess].forEach((permission) => {
-        can(permission, Account, { id: accountId });
+        can(permission, Workspace, { id: workspaceId });
       });
     });
 

@@ -15,13 +15,13 @@ import { AuthGuard } from '@/modules/auth/auth.guard';
 import { Roles } from '@/modules/auth/roles.decorator';
 import { RolesGuard } from '@/modules/auth/roles.guard';
 import { CheckPolicies, CurrentUser } from '@/decorators';
+import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
 
 import {
   ConfirmSharingAccounntDto,
   CreateAccountsSharingInvitationsDto,
 } from './dtos';
-import { User } from '@/modules/user/entities/user.entity';
 import { AccountsSharingInvitationsService } from './accounts-sharing-invitations.service';
 
 @ApiTags('SharingAccountInvitation')
@@ -31,12 +31,12 @@ export class AccountsSharingInvitationsController {
     private readonly accountsSharingInvitationsService: AccountsSharingInvitationsService,
   ) {}
 
-  @Post('create/:accountId')
+  @Post('create')
   @Roles(Role.User)
   @UseGuards(AuthGuard, RolesGuard, PoliciesGuard)
   @CheckPolicies((ability) => ability.can(RoleAccess.MANAGE, Account))
   @ApiCreatedResponse({
-    description: 'Invite to workspace successfully!',
+    description: 'Invite to account successfully!',
   })
   async create(
     @Body() accountsSharingInvitationsData: CreateAccountsSharingInvitationsDto,

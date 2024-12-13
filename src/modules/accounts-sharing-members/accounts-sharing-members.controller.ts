@@ -1,5 +1,12 @@
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
-import { Body, Controller, Patch, UseGuards } from '@nestjs/common';
 
 import { PoliciesGuard } from '@/guards';
 import { handleDataResponse } from '@/utils';
@@ -24,6 +31,7 @@ export class AccountsSharingMembersController {
   @Roles(Role.User)
   @UseGuards(AuthGuard, RolesGuard, PoliciesGuard)
   @CheckPolicies((ability) => ability.can(RoleAccess.MANAGE, Account))
+  @HttpCode(HttpStatus.OK)
   @ApiCreatedResponse({
     description: 'Update acount sharing member successfully!',
   })

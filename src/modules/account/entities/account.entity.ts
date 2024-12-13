@@ -47,7 +47,7 @@ export class Account {
   deletedAt?: Date;
 
   @ApiProperty()
-  @ManyToOne(() => User, (user) => user.accounts, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.accounts)
   @JoinColumn()
   owner: User;
 

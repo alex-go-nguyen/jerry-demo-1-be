@@ -1,4 +1,3 @@
-import { ApiProperty } from '@nestjs/swagger';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -10,10 +9,14 @@ import {
   UpdateDateColumn,
   JoinTable,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-import { Account } from '@/modules/account/entities/account.entity';
 import { User } from '@/modules/user/entities/user.entity';
+import { Account } from '@/modules/account/entities/account.entity';
+import { WorkspacesSharingMembers } from '@/modules/workspaces-sharing-members/entities/workspaces-sharing-members.entity';
 @Entity()
 export class Workspace {
   @PrimaryGeneratedColumn('uuid')
@@ -21,34 +24,9 @@ export class Workspace {
   id: string;
 
   @Column({ type: 'varchar', length: 255 })
+  @IsNotEmpty()
   @ApiProperty()
   name: string;
-
-  @ManyToOne(() => User, (user) => user.workspaces)
-  @JoinColumn({ name: 'userId' })
-  @ApiProperty()
-  owner: User;
-
-  @ManyToMany(() => User, (user) => user.workspaces)
-  @JoinTable({
-    name: 'workspace_users',
-    joinColumn: { name: 'workspaceId', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'userId', referencedColumnName: 'id' },
-  })
-  @ApiProperty()
-  members: User[];
-
-  @ManyToMany(() => Account, (account) => account.workspaces, {
-    cascade: true,
-    onDelete: 'CASCADE',
-  })
-  @JoinTable({
-    name: 'workspace_accounts',
-    joinColumn: { name: 'workspaceId', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'accountId', referencedColumnName: 'id' },
-  })
-  @ApiProperty()
-  accounts: Account[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   @ApiProperty()
@@ -61,4 +39,25 @@ export class Workspace {
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   @ApiProperty()
   deletedAt?: Date;
+
+  @ManyToOne(() => User, (user) => user.workspaces, { onDelete: 'CASCADE' })
+  @JoinColumn()
+  @ApiProperty()
+  owner: User;
+
+  @OneToMany(
+    () => WorkspacesSharingMembers,
+    (sharingMember) => sharingMember.workspace,
+  )
+  @ApiProperty()
+  members: WorkspacesSharingMembers[];
+
+  @ManyToMany(() => Account, (account) => account.workspaces)
+  @JoinTable({
+    name: 'workspace_accounts',
+    joinColumn: { name: 'workspaceId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'accountId', referencedColumnName: 'id' },
+  })
+  @ApiProperty()
+  accounts: Account[];
 }

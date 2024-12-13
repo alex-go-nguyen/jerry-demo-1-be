@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-  ManyToMany,
   DeleteDateColumn,
   OneToOne,
 } from 'typeorm';
@@ -18,6 +17,7 @@ import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 import { ContactInfo } from '@/modules/contact-info/entities/contact-info.entity';
 import { LoginHistory } from '@/modules/login-history/entities/login-history.entity';
 import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
+import { WorkspacesSharingMembers } from '@/modules/workspaces-sharing-members/entities/workspaces-sharing-members.entity';
 
 @Entity()
 export class User {
@@ -75,9 +75,12 @@ export class User {
   @ApiProperty({ type: () => [LoginHistory] })
   loginHistories: LoginHistory[];
 
-  @ManyToMany(() => Workspace, (workspace) => workspace.members)
-  @ApiProperty()
+  @OneToMany(() => Workspace, (workspace) => workspace.owner)
+  @ApiProperty({ type: () => [Workspace] })
   workspaces: Workspace[];
+
+  @OneToMany(() => WorkspacesSharingMembers, (member) => member.member)
+  sharedWorkspaces: WorkspacesSharingMembers[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   @ApiProperty()

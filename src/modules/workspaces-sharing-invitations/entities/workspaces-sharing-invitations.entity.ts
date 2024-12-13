@@ -7,12 +7,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { StatusInvitation } from '@/common/enums';
 import { User } from '@/modules/user/entities/user.entity';
+import { RoleAccess, StatusInvitation } from '@/common/enums';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
 @Entity()
-export class WorkspaceSharingInvitation {
+export class WorkspacesSharingInvitations {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -31,6 +31,13 @@ export class WorkspaceSharingInvitation {
     default: StatusInvitation.PENDING,
   })
   status: StatusInvitation;
+
+  @Column({
+    type: 'enum',
+    enum: RoleAccess,
+    default: RoleAccess.READ,
+  })
+  roleAccess: RoleAccess;
 
   @CreateDateColumn()
   createdAt: Date;
