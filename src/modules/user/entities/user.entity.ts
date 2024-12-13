@@ -16,6 +16,7 @@ import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 import { ContactInfo } from '@/modules/contact-info/entities/contact-info.entity';
 import { LoginHistory } from '@/modules/login-history/entities/login-history.entity';
+import { HighLevelPassword } from '@/modules/high-level-password/entities/high-level-password.entity';
 import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
 import { WorkspacesSharingMembers } from '@/modules/workspaces-sharing-members/entities/workspaces-sharing-members.entity';
 
@@ -49,6 +50,7 @@ export class User {
   @Column({ default: false })
   isAuthenticated: boolean;
 
+  @ApiProperty()
   @Column({
     type: 'enum',
     enum: Role,
@@ -59,6 +61,10 @@ export class User {
 
   @OneToOne(() => UserTwoFa, (userTwoFa) => userTwoFa.user)
   userTwoFa: UserTwoFa;
+
+  @OneToMany(() => HighLevelPassword, (password) => password.user)
+  @ApiProperty({ type: () => [HighLevelPassword] })
+  highLevelPasswords: HighLevelPassword[];
 
   @OneToMany(() => Account, (account) => account.owner)
   @ApiProperty({ type: () => [Account] })
