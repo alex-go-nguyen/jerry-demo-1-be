@@ -1,56 +1,44 @@
-version: '3.8'
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
+    container_name: backend
     ports:
       - '3000:3000'
     env_file:
-      - .env.staging
+      - .env
     volumes:
       - .:/app
       - /app/node_modules
     depends_on:
-      postgres:
+      - postgres
+      - redis:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - backend_network
-    
+  
   postgres:
-    image: postgres:latest
+    image: postgres:15-alpine
+    container_name: postgres
     environment:
+      POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_DATABASE}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - backend_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
-      interval: 10s
-      retries: 5
-      start_period: 5s
-      timeout: 5s
-    
+
   redis:
-    image: redis:latest
+    image: redis:6.2-alpine
     container_name: redis
     restart: always
     ports:
       - '6379:6379'
     volumes:
-      - redis_data:/data 
-    networks:
-      - backend_network
+      - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       retries: 5
       start_period: 5s
@@ -58,7 +46,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  
-networks:
-  backend_network:
-    driver: bridge

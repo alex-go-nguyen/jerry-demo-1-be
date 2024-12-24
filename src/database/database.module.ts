@@ -19,7 +19,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           migrationsTableName: 'migrations',
           synchronize: configService.get('NODE_ENV') === 'development',
           ssl:
-            configService.get('NODE_ENV') === 'production'
+            configService.get('NODE_ENV') !== 'development'
               ? { rejectUnauthorized: false }
               : false,
         };

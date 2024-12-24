@@ -14,7 +14,7 @@ export const dataSourceOptions: DataSourceOptions = {
   migrations: [__dirname + '/src/database/migrations/*.{ts,js}'],
   migrationsTableName: 'migrations',
   ssl:
-    process.env.NODE_ENV === 'production'
+    process.env.NODE_ENV !== 'development'
       ? { rejectUnauthorized: false }
       : false,
 };

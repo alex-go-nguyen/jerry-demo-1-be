@@ -26,8 +26,6 @@ import { SharingWorkspaceModule } from '@/modules/workspaces-sharing-invitations
 import { AccountsSharingInvitationsModule } from '@/modules/accounts-sharing-invitations/accounts-sharing-invitations.module';
 import { AccountVersionModule } from './modules/account-version/account-version.module';
 import { CaptchaModule } from './modules/captcha/captcha.module';
-import { CacheModule } from '@nestjs/cache-manager';
-// import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -72,9 +70,6 @@ import { CacheModule } from '@nestjs/cache-manager';
       },
     ]),
     DatabaseModule,
-    CacheModule.register({
-      isGlobal: true,
-    }),
     AuthModule,
     UsersModule,
     AccountModule,

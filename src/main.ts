@@ -3,6 +3,7 @@ import * as cookieParser from 'cookie-parser';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 import { CustomExceptionFilter } from '@/common/exceptions';
 
@@ -41,6 +42,17 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.useGlobalFilters(new CustomExceptionFilter());
 
+  const appRedis = await NestFactory.createMicroservice<MicroserviceOptions>(
+    AppModule,
+    {
+      transport: Transport.REDIS,
+      options: {
+        host: configService.get<string>('REDIS_HOST'),
+        port: configService.get<number>('REDIS_PORT'),
+      },
+    },
+  );
   await app.listen(port);
+  await appRedis.listen();
 }
 bootstrap();

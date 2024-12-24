@@ -1,7 +1,4 @@
-FROM node:20-alpine
-
-# Update Alpine's package index and install curl
-RUN apk update && apk add --no-cache curl
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -10,8 +7,6 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-
-RUN npm run build
 
 EXPOSE 3000
 
