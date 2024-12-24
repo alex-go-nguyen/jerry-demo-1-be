@@ -1,15 +1,12 @@
+import { LRUCache } from 'lru-cache';
 import { Module } from '@nestjs/common';
-
 import { JwtModule } from '@nestjs/jwt';
-
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { LRUCache } from 'lru-cache';
-
-import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
-
 import { User } from '@/modules/user/entities/user.entity';
+import { RedisCacheService } from '@/cache/redis-cache.service';
+import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
 import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
 import { AuthService } from './auth.service';
@@ -41,6 +38,7 @@ import { AuthController } from './auth.controller';
         });
       },
     },
+    RedisCacheService,
   ],
   controllers: [AuthController],
   exports: [AuthService],

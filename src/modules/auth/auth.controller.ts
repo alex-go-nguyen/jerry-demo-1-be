@@ -1,4 +1,3 @@
-import Redis from 'ioredis';
 import {
   Controller,
   Post,
@@ -50,14 +49,15 @@ import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
 import { VerifyOtpDto, VerifyTotpDto } from './dtos';
+import { RedisCacheService } from '@/cache/redis-cache.service';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  private redisClient: Redis;
-  constructor(private readonly authService: AuthService) {
-    this.redisClient = new Redis();
-  }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly redisCacheService: RedisCacheService,
+  ) {}
 
   @Post('register')
   @HttpCode(201)
@@ -295,6 +295,7 @@ export class AuthController {
       const resultTokens = await this.authService.reFreshTokenService(
         user.email,
       );
+      this.redisCacheService.saveAccessToken(user.id, resultTokens.accessToken);
       return resultTokens;
     } catch (error) {
       throw error;
@@ -310,7 +311,13 @@ export class AuthController {
     request: Request,
     response: Response,
   ) {
+    this.redisCacheService.saveAccessToken(
+      resultData.currentUser.id,
+      resultData.accessToken,
+    );
+
     const referer = request.headers['origin'];
+
     if (referer && referer.startsWith('chrome-extension://')) {
       response.status(HttpStatus.OK).json({
         ...handleDataResponse('Login successfully!'),
@@ -332,18 +339,23 @@ export class AuthController {
         ...handleDataResponse('Login successfully!'),
         currentUser: { ...resultData.currentUser },
       });
-    this.redisClient.setex(
-      `userId:${resultData.currentUser.id}`,
-      3600,
-      resultData.accessToken,
-    );
   }
 
   @Get('get-token/:userId')
   @HttpCode(200)
-  async getTokenByUserId(@Param('userId') userId: string) {
-    const accessToken = await this.redisClient.get(`userId:${userId}`);
+  async getTokenByUserId(
+    @Param('userId') userId: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const accessToken = await this.redisCacheService.getAccessToken(userId);
     if (accessToken) {
+      response.cookie('access_token', accessToken, {
+        path: '/',
+        expires: new Date(Date.now() + +process.env.COOKIE_EXPIRE_TIME),
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV !== 'development',
+      });
       return { accessToken };
     } else {
       throw new NotFoundException('No token founded');

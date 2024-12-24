@@ -99,7 +99,7 @@ export class AuthService {
     const existedUser = await this.userRepository.findOne({
       where: { email: userData.email },
       withDeleted: true,
-      relations: ['userTwoFa'],
+      relations: ['userTwoFa', 'highLevelPasswords'],
     });
 
     if (!existedUser) {
@@ -126,7 +126,7 @@ export class AuthService {
   ): Promise<ILoginResultWithTokens> {
     const existedUser = await this.userRepository.findOne({
       where: { id: veriyTotpData.userId },
-      relations: ['userTwoFa'],
+      relations: ['userTwoFa', 'highLevelPasswords'],
     });
     const existedSecretTwoFa = existedUser.userTwoFa.secret;
     const secret =
@@ -314,6 +314,7 @@ export class AuthService {
       email,
       avatar,
       phoneNumber,
+      highLevelPasswords,
       userTwoFa: { status },
     } = user;
     const isSkippedTwoFa =
@@ -329,6 +330,11 @@ export class AuthService {
         role,
         email,
         avatar,
+        highLevelPasswords: highLevelPasswords.map((highLevelPassword) => ({
+          methodSecureId: highLevelPassword.id,
+          type: highLevelPassword.type,
+          status: highLevelPassword.status,
+        })),
         status: status,
         isSkippedTwoFa,
         phoneNumber,
