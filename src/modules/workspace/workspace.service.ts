@@ -1,4 +1,4 @@
-import { In, Repository } from 'typeorm';
+import { Brackets, In, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -8,8 +8,10 @@ import {
   ErrorCode,
   RoleAccess,
 } from '@/common/enums';
+import { TABLES } from '@/utils/constants';
 import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
+import { PaginationQueryDto } from '@/modules/account/dto/pagination-query.dto';
 import { NotificationGateway } from '@/modules/notification/notification.gateway';
 import { NotificationService } from '@/modules/notification/notification.service';
 import { MemberActivityLogService } from '@/modules/member-activity-log/member-activity-log.service';
@@ -113,25 +115,44 @@ export class WorkspaceService {
     };
   }
 
-  async getWorkspacesByUserId(userId: string) {
-    const workspaces = await this.workspaceRepository.find({
-      where: [
-        { owner: { id: userId } },
-        { members: { member: { id: userId } } },
-      ],
-      relations: ['owner', 'members', 'accounts', 'members.member'],
-      select: {
-        id: true,
-        name: true,
-        owner: { id: true, name: true, email: true, avatar: true },
-        accounts: { id: true, domain: true, username: true, password: true },
-        members: {
-          roleAccess: true,
-          member: { id: true, name: true, email: true, avatar: true },
-        },
-      },
-    });
-    return workspaces.map((workspace) => ({
+  async getWorkspacesByUserId(userId: string, query: PaginationQueryDto) {
+    const { page, limit, keyword } = query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const queryBuilder = this.workspaceRepository
+      .createQueryBuilder(TABLES.workspace)
+      .leftJoinAndSelect('workspace.owner', 'owner')
+      .leftJoinAndSelect('workspace.members', 'members')
+      .leftJoinAndSelect('members.member', 'member')
+      .leftJoinAndSelect('workspace.accounts', 'accounts');
+
+    if (keyword) {
+      queryBuilder.where('workspace.name ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+    }
+
+    queryBuilder
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('owner.id = :userId', { userId }).orWhere(
+            'member.id = :userId',
+            { userId },
+          );
+        }),
+      )
+      .skip(skip)
+      .take(limitNumber);
+
+    const [workspaces, totalCount] = await queryBuilder.getManyAndCount();
+
+    const totalPages = Math.ceil(totalCount / limitNumber);
+
+    const formattedWorkspaces = workspaces.map((workspace) => ({
       ...workspace,
       members: workspace.members.map((member) => ({
         id: member.member.id,
@@ -141,6 +162,12 @@ export class WorkspaceService {
         roleAccess: member.roleAccess,
       })),
     }));
+
+    return {
+      workspaces: formattedWorkspaces,
+      totalPages,
+      itemsPerPage: limitNumber,
+    };
   }
 
   async update(
@@ -193,6 +220,7 @@ export class WorkspaceService {
     );
     const newAccounts = await this.accountRepository.find({
       where: { id: In(newAccountIds) },
+      relations: ['owner'],
     });
 
     existedWorkspace.accounts = [
@@ -205,10 +233,24 @@ export class WorkspaceService {
     await this.workspaceRepository.save(existedWorkspace);
 
     await this.workspacesSharingMembersService.updateAccountsSharingFromWorkspace(
-      { workspaceId, newAccountIds, removedAccountIds },
+      { workspaceId, newAccountIds, removedAccountIds, userId: user.id },
     );
 
     if (user.id !== existedWorkspace.owner.id) {
+      const accountsNotOwnedByOwner = newAccounts.filter(
+        (account) => account.owner.id !== existedWorkspace.owner.id,
+      );
+
+      if (accountsNotOwnedByOwner.length > 0) {
+        for (const account of accountsNotOwnedByOwner) {
+          await this.accountsSharingMembersRepository.save({
+            account,
+            member: existedWorkspace.owner,
+            roleAccess: RoleAccess.READ,
+          });
+        }
+      }
+
       const activityLog = await this.memberActivityLogService.create({
         workspaceId: existedWorkspace.id,
         entityType: EntityType.WORKSPACE,

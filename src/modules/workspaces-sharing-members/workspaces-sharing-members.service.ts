@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { ErrorCode } from '@/common/enums';
 import { Injectable } from '@nestjs/common';
+import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 import { AccountsSharingMembersService } from '@/modules/accounts-sharing-members/accounts-sharing-members.service';
 import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
 
@@ -20,6 +21,9 @@ export class WorkspacesSharingMembersService {
 
     @InjectRepository(AccountsSharingMembers)
     private accountsSharingMembersRepository: Repository<AccountsSharingMembers>,
+
+    @InjectRepository(Workspace)
+    private workspaceRepository: Repository<Workspace>,
 
     private readonly accountsSharingMembersService: AccountsSharingMembersService,
   ) {}
@@ -61,11 +65,17 @@ export class WorkspacesSharingMembersService {
         where: { workspaceId },
         relations: ['member'],
       });
+    const currentWorkspace = await this.workspaceRepository.findOne({
+      where: { id: workspaceId },
+      relations: ['accounts'],
+    });
+    if (!currentWorkspace || !currentWorkspace.accounts) {
+      throw new Error(ErrorCode.WORKSPACE_NOT_FOUND);
+    }
     if (sharingMembers.length !== existedSharingMembers.length) {
       const incomingMemberIds = sharingMembers.map((member) => member.id);
 
       const incomingMemberIdsSet = new Set(incomingMemberIds);
-
       const membersToDelete = existedSharingMembers.filter(
         (existedSharingMember) =>
           !incomingMemberIdsSet.has(existedSharingMember.member.id),
@@ -78,6 +88,13 @@ export class WorkspacesSharingMembersService {
         }),
       );
       await Promise.all(deleteMemberPromises);
+
+      await this.accountsSharingMembersRepository.delete({
+        accountId: In(currentWorkspace.accounts.map((account) => account.id)),
+        memberId: In(
+          membersToDelete.map((memberToDelete) => memberToDelete.member.id),
+        ),
+      });
     }
     if (sharingMembers.length > 0) {
       const updateMemberPromises = sharingMembers.map((sharingMember) =>
@@ -123,10 +140,12 @@ export class WorkspacesSharingMembersService {
     workspaceId,
     newAccountIds,
     removedAccountIds,
+    userId,
   }: {
     workspaceId: string;
     newAccountIds: string[];
     removedAccountIds: string[];
+    userId?: string;
   }) {
     const workspaceMembers = await this.workspacesSharingMembersRepository.find(
       {
@@ -148,14 +167,23 @@ export class WorkspacesSharingMembersService {
 
     if (newAccountIds.length > 0) {
       const newSharingMembers = newAccountIds.flatMap((accountId) =>
-        workspaceMembers.map((member) => ({
-          accountId,
-          memberId: member.member.id,
-          roleAccess: member.roleAccess,
-        })),
+        workspaceMembers
+          .map((member) => {
+            if (member.member.id !== userId) {
+              return this.accountsSharingMembersRepository.create({
+                account: { id: accountId },
+                member: member.member,
+                roleAccess: member.roleAccess,
+              });
+            }
+            return null;
+          })
+          .filter((item) => item !== null),
       );
 
-      await this.accountsSharingMembersRepository.save(newSharingMembers);
+      if (newSharingMembers.length > 0) {
+        await this.accountsSharingMembersRepository.save(newSharingMembers);
+      }
     }
   }
 }

@@ -11,6 +11,7 @@ import {
   HttpCode,
   Patch,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -27,6 +28,7 @@ import { Roles } from '@/modules/auth/roles.decorator';
 import { RolesGuard } from '@/modules/auth/roles.guard';
 import { CheckPolicies, CurrentUser } from '@/decorators';
 import { User } from '@/modules/user/entities/user.entity';
+import { PaginationQueryDto } from '@/modules/account/dto/pagination-query.dto';
 
 import { WorkspaceService } from './workspace.service';
 import { Workspace } from './entities/workspace.entity';
@@ -75,12 +77,8 @@ export class WorkspaceController {
   @Roles(Role.User)
   @HttpCode(HttpStatus.OK)
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
-  async findAll(@CurrentUser() user: User) {
-    try {
-      return await this.workspaceService.getWorkspacesByUserId(user.id);
-    } catch (error) {
-      throw error;
-    }
+  async findAll(@CurrentUser() user: User, @Query() query: PaginationQueryDto) {
+    return this.workspaceService.getWorkspacesByUserId(user.id, query);
   }
 
   @Put('update/:workspaceId')

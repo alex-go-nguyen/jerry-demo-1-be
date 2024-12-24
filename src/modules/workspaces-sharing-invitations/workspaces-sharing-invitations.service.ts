@@ -188,7 +188,7 @@ export class SharingWorkspaceService {
     }
 
     if (invitation.status === StatusInvitation.ACCEPTED) {
-      throw new Error(ErrorCode.INVALID_LINK_EMAIL_VERIFICATION);
+      throw new Error(ErrorCode.INVALID_LINK_CONFIRM_INVITATION);
     }
 
     invitation.status = StatusInvitation.ACCEPTED;
@@ -225,27 +225,5 @@ export class SharingWorkspaceService {
 
     invitation.status = StatusInvitation.DECLINE;
     await this.workspacesSharingInvitationsRepository.save(invitation);
-  }
-
-  async getPendingIvitation(userEmail: string) {
-    const pendingInvitations = this.workspacesSharingInvitationsRepository.find(
-      {
-        where: { email: userEmail, status: StatusInvitation.PENDING },
-        relations: ['owner', 'workspace'],
-        select: {
-          owner: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-          },
-          workspace: {
-            name: true,
-          },
-        },
-      },
-    );
-
-    return pendingInvitations;
   }
 }

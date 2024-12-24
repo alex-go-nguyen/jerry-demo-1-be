@@ -12,7 +12,7 @@ export class CreateWorkspaceSharingMemberDto {
 
   @IsNotEmpty({ message: 'member is required' })
   @ApiProperty()
-  member: User;
+  member: Partial<User>;
 
   @IsString({ message: 'roleAccess must be a array' })
   @IsNotEmpty({ message: 'roleAccess is required' })
