@@ -222,24 +222,4 @@ export class AccountsSharingInvitationsService {
     invitation.status = StatusInvitation.DECLINE;
     await this.accountsSharingInvitationsRepository.save(invitation);
   }
-
-  async getPendingIvitation(userEmail: string) {
-    const pendingInvitations = this.accountsSharingInvitationsRepository.find({
-      where: { email: userEmail, status: StatusInvitation.PENDING },
-      relations: ['owner', 'account'],
-      select: {
-        owner: {
-          id: true,
-          name: true,
-          email: true,
-          avatar: true,
-        },
-        account: {
-          username: true,
-        },
-      },
-    });
-
-    return pendingInvitations;
-  }
 }

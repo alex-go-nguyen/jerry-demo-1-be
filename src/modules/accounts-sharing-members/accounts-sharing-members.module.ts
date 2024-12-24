@@ -18,5 +18,6 @@ import { AccountsSharingMembersController } from './accounts-sharing-members.con
   ],
   controllers: [AccountsSharingMembersController],
   providers: [AccountsSharingMembersService],
+  exports: [AccountsSharingMembersService],
 })
 export class AccountsSharingMembersModule {}
