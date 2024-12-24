@@ -10,6 +10,8 @@ import {
   Put,
   Delete,
   HttpStatus,
+  Query,
+  Patch,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
@@ -28,6 +30,7 @@ import { UpdateAccountDto } from './dto';
 import { AccountService } from './account.service';
 import { Account } from './entities/account.entity';
 import { CreateAccountDto } from './dto/create-account.dto';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
 
 @ApiTags('Account')
 @Controller('accounts')
@@ -63,12 +66,11 @@ export class AccountController {
   @ApiOkResponse({
     description: 'Get accounts successfully!',
   })
-  async getAccountsByUserId(@CurrentUser() user: User) {
-    try {
-      return this.accountService.getAccountsByUserId(user.id);
-    } catch (error) {
-      throw error;
-    }
+  async getAccountsByUserId(
+    @CurrentUser() user: User,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.accountService.getAccountsByUserId(user.id, query);
   }
 
   @Get(':accountId')
@@ -107,6 +109,24 @@ export class AccountController {
         updateAccountData,
       );
       return handleDataResponse('Update account successfully', 'OK');
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Patch('rollback/:versionId')
+  @Roles(Role.User)
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({
+    description: 'Update account successfully!',
+  })
+  async rollback(
+    @Param('versionId') versionId: string,
+    @CurrentUser() user: User,
+  ) {
+    try {
+      await this.accountService.rollbackToVersion(user.id, versionId);
+      return handleDataResponse('Rollback account successfully', 'OK');
     } catch (error) {
       throw error;
     }

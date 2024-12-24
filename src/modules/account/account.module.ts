@@ -9,6 +9,8 @@ import { EncryptionService } from '@/encryption/encryption.service';
 import { NotificationService } from '@/modules/notification/notification.service';
 import { NotificationGateway } from '@/modules/notification/notification.gateway';
 import { Notification } from '@/modules/notification/entities/notification.entity';
+import { AccountVersionService } from '@/modules/account-version/account-version.service';
+import { AccountVersion } from '@/modules/account-version/entities/account-version.entity';
 import { MemberActivityLogService } from '@/modules/member-activity-log/member-activity-log.service';
 import { MemberActivityLog } from '@/modules/member-activity-log/entities/member-activity-log.entity';
 import { NotificationDetailService } from '@/modules/notification-detail/notification-detail.service';
@@ -29,6 +31,7 @@ import { AccountController } from './account.controller';
       MemberActivityLog,
       Notification,
       NotificationDetail,
+      AccountVersion,
     ]),
     AuthModule,
     CaslModule,
@@ -42,6 +45,7 @@ import { AccountController } from './account.controller';
     NotificationDetailService,
     NotificationGateway,
     RedisCacheService,
+    AccountVersionService,
   ],
   controllers: [AccountController],
   exports: [AccountService],

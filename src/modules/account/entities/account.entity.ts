@@ -14,6 +14,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { User } from '@/modules/user/entities/user.entity';
 import { Workspace } from '@/modules/workspace/entities/workspace.entity';
+import { AccountVersion } from '@/modules/account-version/entities/account-version.entity';
 import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
 
 @Entity()
@@ -57,6 +58,10 @@ export class Account {
   )
   @ApiProperty()
   members: AccountsSharingMembers[];
+
+  @OneToMany(() => AccountVersion, (version) => version.account)
+  @ApiProperty()
+  versions: AccountVersion[];
 
   @ManyToMany(() => Workspace, (workspace) => workspace.accounts)
   workspaces: Workspace[];
