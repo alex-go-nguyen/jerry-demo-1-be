@@ -24,6 +24,10 @@ import { AccountsSharingMembersModule } from '@/modules/accounts-sharing-members
 import { WorkspacesSharingMembersModule } from './modules/workspaces-sharing-members/workspaces-sharing-members.module';
 import { SharingWorkspaceModule } from '@/modules/workspaces-sharing-invitations/workspaces-sharing-invitations.module';
 import { AccountsSharingInvitationsModule } from '@/modules/accounts-sharing-invitations/accounts-sharing-invitations.module';
+import { AccountVersionModule } from './modules/account-version/account-version.module';
+import { CaptchaModule } from './modules/captcha/captcha.module';
+import { CacheModule } from '@nestjs/cache-manager';
+// import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -68,6 +72,9 @@ import { AccountsSharingInvitationsModule } from '@/modules/accounts-sharing-inv
       },
     ]),
     DatabaseModule,
+    CacheModule.register({
+      isGlobal: true,
+    }),
     AuthModule,
     UsersModule,
     AccountModule,
@@ -85,6 +92,8 @@ import { AccountsSharingInvitationsModule } from '@/modules/accounts-sharing-inv
     NotificationModule,
     NotificationDetailModule,
     MemberActivityLogModule,
+    AccountVersionModule,
+    CaptchaModule,
   ],
 
   providers: [
