@@ -39,7 +39,7 @@ export class NotificationService {
       notificationDetail,
     });
 
-    return this.notificationRepository.save(notification);
+    return await this.notificationRepository.save(notification);
   }
 
   async findAll(userEmail: string) {
@@ -58,6 +58,7 @@ export class NotificationService {
         'notificationDetail.memberActivityLog.account',
         'notificationDetail.memberActivityLog.workspace',
       ],
+      withDeleted: true,
       select: {
         sender: { name: true, avatar: true },
       },
@@ -68,7 +69,7 @@ export class NotificationService {
   }
 
   async setRead(user: User, notificaitonId: string) {
-    const existedNofication = this.notificationRepository.findOne({
+    const existedNofication = await this.notificationRepository.findOne({
       where: {
         id: notificaitonId,
         receipient: user.email,
