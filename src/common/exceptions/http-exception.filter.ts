@@ -20,17 +20,23 @@ export class CustomExceptionFilter implements ExceptionFilter {
       message: 'Internal server error',
       errorCode: ErrorCode.SERVER_ERROR,
     };
-
     if (exception instanceof HttpException) {
-      responseData.status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      responseData.message =
-        typeof exceptionResponse === 'object'
-          ? (exceptionResponse as any).message || exception.message
-          : exceptionResponse;
-    }
-
-    if (exception instanceof Error) {
+      const exceptionDetails =
+        exceptionCase[(exceptionResponse as any).message];
+      if (exceptionDetails) {
+        responseData = { ...exceptionDetails };
+      } else {
+        responseData = {
+          status: exception.getStatus(),
+          message:
+            typeof (exceptionResponse as any).message === 'object'
+              ? (exceptionResponse as any).message[0]
+              : (exceptionResponse as any).message || exception.message,
+          errorCode: (exceptionResponse as any).error,
+        };
+      }
+    } else if (exception instanceof Error) {
       const exceptionDetails = exceptionCase[exception.message];
       if (exceptionDetails) {
         responseData = { ...exceptionDetails };

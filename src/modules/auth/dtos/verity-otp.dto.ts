@@ -2,12 +2,11 @@ import { IsEmail, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class VerifyOtpDto {
-  @IsString()
-  @IsEmail()
+  @IsEmail({}, { message: 'Email must be a valid email address' })
   @ApiProperty()
   email: string;
 
-  @IsString()
+  @IsString({ message: 'OTP must be a string' })
   @ApiProperty()
   otp: string;
 }

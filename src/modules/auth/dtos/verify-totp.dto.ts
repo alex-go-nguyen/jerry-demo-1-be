@@ -2,13 +2,13 @@ import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class VerifyTotpDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'userId must be a string' })
+  @IsNotEmpty({ message: 'userId is not empty' })
   @ApiProperty()
   userId: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Token must be a string' })
+  @IsNotEmpty({ message: 'Token is not empty' })
   @ApiProperty()
   token: string;
 }

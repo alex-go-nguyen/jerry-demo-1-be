@@ -5,6 +5,9 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Get,
+  Patch,
+  Param,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 
@@ -44,7 +47,7 @@ export class SharingWorkspaceController {
   ) {
     try {
       await this.sharingWorkspaceService.create(
-        user.id,
+        user,
         createSharingWorkspaceDto,
       );
       return handleDataResponse('Invite members successfully', 'OK');
@@ -69,5 +72,23 @@ export class SharingWorkspaceController {
     } catch (error) {
       throw error;
     }
+  }
+
+  @Patch('decline-invitation/:inviteId')
+  @ApiCreatedResponse({
+    description: 'Invite to workspace successfully!',
+  })
+  @HttpCode(HttpStatus.OK)
+  async decline(@Param('inviteId') inviteId: string) {
+    await this.sharingWorkspaceService.declineInvitation(inviteId);
+    return handleDataResponse('Invitation declined successfully', 'OK');
+  }
+
+  @Get('')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.User)
+  @HttpCode(HttpStatus.OK)
+  async getPendingInvitations(@CurrentUser() user: User) {
+    return this.sharingWorkspaceService.getPendingIvitation(user.email);
   }
 }
