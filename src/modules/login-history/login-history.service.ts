@@ -4,7 +4,6 @@ import { Between, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
 
-import { envKeys } from '@/utils/constants';
 import { User } from '@/modules/user/entities/user.entity';
 
 import { CreateLoginHistoryDto } from './dtos';
@@ -37,7 +36,6 @@ export class LoginHistoryService {
     if (!deviceIds.includes(createLoginHistoryData.deviceId)) {
       await this.mailerService.sendMail({
         to: user.email,
-        from: envKeys.EMAIL_SENDER,
         subject: 'Warning email',
         template: 'warning_email',
         context: {

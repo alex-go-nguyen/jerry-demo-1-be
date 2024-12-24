@@ -1,10 +1,10 @@
+import { Repository } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
-
 import { User } from '@/modules/user/entities/user.entity';
 import { Account } from '@/modules/account/entities/account.entity';
+import { Workspace } from '@/modules/workspace/entities/workspace.entity';
 
 import { DashboardService } from './dashboard.service';
 
@@ -12,12 +12,14 @@ describe('DashboardService', () => {
   let service: DashboardService;
   let userRepository: Partial<Repository<User>>;
   let accountRepository: Partial<Repository<Account>>;
+  let workspaceRepository: Partial<Repository<Workspace>>;
 
   beforeEach(async () => {
     const mockQueryBuilder = {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
       groupBy: jest.fn().mockReturnThis(),
       addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
@@ -33,6 +35,10 @@ describe('DashboardService', () => {
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     } as Partial<Repository<Account>>;
 
+    workspaceRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+    } as Partial<Repository<Workspace>>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DashboardService,
@@ -44,6 +50,10 @@ describe('DashboardService', () => {
           provide: getRepositoryToken(Account),
           useValue: accountRepository,
         },
+        {
+          provide: getRepositoryToken(Workspace),
+          useValue: workspaceRepository,
+        },
       ],
     }).compile();
 
@@ -53,8 +63,8 @@ describe('DashboardService', () => {
   describe('getUserRegistrations', () => {
     it('should return user registration data grouped by month and year', async () => {
       const mockData = [
-        { month: 'January', year: '2024', value: '5' },
-        { month: 'February', year: '2024', value: '10' },
+        { month: 'January', year: 2024, value: 5 },
+        { month: 'February', year: 2024, value: 10 },
       ];
 
       (
