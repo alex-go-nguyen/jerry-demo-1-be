@@ -1,4 +1,3 @@
-import Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
 import { LRUCache } from 'lru-cache';
 import { Repository } from 'typeorm';
@@ -17,6 +16,7 @@ import {
 } from '@/modules/user/dtos';
 import { envKeys } from '@/utils/constants';
 import { User } from '@/modules/user/entities/user.entity';
+import { RedisCacheService } from '@/cache/redis-cache.service';
 import { ILoginResult, ILoginResultWithTokens } from '@/interfaces';
 import { ErrorCode, StatusEnableTwoFa, StatusTwoFa } from '@/common/enums';
 import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
@@ -26,7 +26,6 @@ import { VerifyOtpDto, VerifyTotpDto } from './dtos';
 
 @Injectable()
 export class AuthService {
-  private redisClient: Redis;
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -38,11 +37,11 @@ export class AuthService {
 
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
-    private jwtService: JwtService,
+    private readonly jwtService: JwtService,
+    private readonly redisCacheService: RedisCacheService,
+
     private readonly cache: LRUCache<string, string>,
-  ) {
-    this.redisClient = new Redis();
-  }
+  ) {}
 
   async registerService(userData: CreateUserDto) {
     const existedUser = await this.userRepository.findOne({
@@ -74,7 +73,7 @@ export class AuthService {
 
     await this.mailerService.sendMail({
       to: saveUser.email,
-      from: envKeys.EMAIL_SENDER,
+      from: this.configService.get<string>(envKeys.EMAIL_SENDER),
       subject: 'Verify email',
       template: 'verification_email',
       context: {
@@ -117,7 +116,7 @@ export class AuthService {
 
   async generateQrByUserId(userId: string) {
     const { secret, qrCodeUrl } = await this.userTwoFaService.generateQr();
-    await this.redisClient.setex(`secret:${userId}`, 300, secret.base32);
+    await this.redisCacheService.saveSecretTwoFa(userId, secret.base32);
     return { qrCodeUrl };
   }
 
@@ -130,7 +129,7 @@ export class AuthService {
     });
     const existedSecretTwoFa = existedUser.userTwoFa.secret;
     const secret =
-      (await this.redisClient.get(`secret:${veriyTotpData.userId}`)) ||
+      (await this.redisCacheService.getSecretTwoFa(veriyTotpData.userId)) ||
       existedSecretTwoFa;
 
     const verifiedTotp = await this.userTwoFaService.verifyTotp({
@@ -184,7 +183,7 @@ export class AuthService {
 
     await this.mailerService.sendMail({
       to: forgotPasswordData.email,
-      from: envKeys.EMAIL_SENDER,
+      from: this.configService.get<string>(envKeys.EMAIL_SENDER),
       subject: 'Forgot password',
       template: 'password_reset_request',
       context: {
@@ -319,7 +318,7 @@ export class AuthService {
     } = user;
     const isSkippedTwoFa =
       status === StatusTwoFa.NOT_REGISTERED
-        ? !!(await this.redisClient.get(`isSkippedTwoFa-${id}`))
+        ? !!(await this.redisCacheService.getSkipTwoFa(id))
         : false;
     return {
       accessToken: accessTokenResult.value,
@@ -352,7 +351,7 @@ export class AuthService {
       expiresIn,
     });
   }
-  private checkExistedUser(user: User) {
+  checkExistedUser(user: User) {
     if (!user) {
       throw new Error(ErrorCode.USER_NOT_FOUND);
     }
