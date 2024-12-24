@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -80,15 +79,5 @@ export class AccountsSharingInvitationsController {
   async decline(@Param('inviteId') inviteId: string) {
     await this.accountsSharingInvitationsService.declineInvitation(inviteId);
     return handleDataResponse('Invitation declined successfully', 'OK');
-  }
-
-  @Get('')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(Role.User)
-  @HttpCode(HttpStatus.OK)
-  async getPendingInvitations(@CurrentUser() user: User) {
-    return this.accountsSharingInvitationsService.getPendingIvitation(
-      user.email,
-    );
   }
 }
