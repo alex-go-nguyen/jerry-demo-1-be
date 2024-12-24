@@ -21,6 +21,7 @@ export interface ILoginResultWithTokens {
     avatar: string;
     status: string;
     phoneNumber: string;
+    highLevelPasswords: { type: string; status: string }[];
     isSkippedTwoFa: boolean;
   };
 }
