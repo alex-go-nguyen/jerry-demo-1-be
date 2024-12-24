@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import {
@@ -7,15 +7,18 @@ import {
   ErrorCode,
   RoleAccess,
 } from '@/common/enums';
+import { TABLES } from '@/utils/constants';
 import { Injectable } from '@nestjs/common';
 import { User } from '@/modules/user/entities/user.entity';
 import { EncryptionService } from '@/encryption/encryption.service';
 import { NotificationService } from '@/modules/notification/notification.service';
 import { NotificationGateway } from '@/modules/notification/notification.gateway';
+import { AccountVersionService } from '@/modules/account-version/account-version.service';
 import { MemberActivityLogService } from '@/modules/member-activity-log/member-activity-log.service';
 
 import { Account } from './entities/account.entity';
 import { CreateAccountDto, UpdateAccountDto } from './dto';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
 
 export type CheckOwnerParams = {
   ownerId: string;
@@ -35,6 +38,8 @@ export class AccountService {
     private readonly notificationService: NotificationService,
 
     private readonly notificationGateway: NotificationGateway,
+
+    private readonly accountVersionService: AccountVersionService,
   ) {}
 
   async createAccountService(user, createAccountData: CreateAccountDto) {
@@ -59,26 +64,44 @@ export class AccountService {
     return !!account;
   }
 
-  async getAccountsByUserId(userId: string) {
-    const accounts = await this.accountRepository.find({
-      where: [
-        { owner: { id: userId } },
-        { members: { member: { id: userId } } },
-      ],
-      relations: ['owner', 'members', 'members.member'],
-      select: {
-        id: true,
-        domain: true,
-        username: true,
-        password: true,
-        owner: { id: true, name: true, email: true, avatar: true },
-        members: {
-          roleAccess: true,
-          member: { id: true, name: true, email: true, avatar: true },
-        },
-      },
-    });
-    return accounts.map((account) => ({
+  async getAccountsByUserId(userId: string, query: PaginationQueryDto) {
+    const { page, limit, keyword } = query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const queryBuilder = this.accountRepository
+      .createQueryBuilder(TABLES.account)
+      .leftJoinAndSelect('account.owner', 'owner')
+      .leftJoinAndSelect('account.members', 'members')
+      .leftJoinAndSelect('members.member', 'member');
+
+    if (keyword) {
+      queryBuilder.where(
+        '(account.username ILIKE :keyword OR account.domain ILIKE :keyword)',
+        { keyword: `%${keyword}%` },
+      );
+    }
+
+    queryBuilder
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('owner.id = :userId', { userId }).orWhere(
+            'member.id = :userId',
+            { userId },
+          );
+        }),
+      )
+      .skip(skip)
+      .take(limitNumber);
+
+    const [accounts, totalCount] = await queryBuilder.getManyAndCount();
+
+    const totalPages = Math.ceil(totalCount / limitNumber);
+
+    const formattedAccounts = accounts.map((account) => ({
       ...account,
       members: account.members.map((member) => ({
         id: member.member.id,
@@ -88,6 +111,12 @@ export class AccountService {
         roleAccess: member.roleAccess,
       })),
     }));
+
+    return {
+      accounts: formattedAccounts,
+      totalPages,
+      itemsPerPage: limitNumber,
+    };
   }
 
   async getAccountById(accountId: string) {
@@ -125,13 +154,9 @@ export class AccountService {
     updateAccountData: UpdateAccountDto,
   ) {
     const existedAccount = await this.accountRepository.findOne({
-      where: [
-        {
-          id: accountId,
-        },
-        { owner: { id: user.id } },
-        { members: { member: { id: user.id } } },
-      ],
+      where: {
+        id: accountId,
+      },
       relations: ['owner', 'members'],
     });
 
@@ -140,10 +165,19 @@ export class AccountService {
     const encryptedPassword = this.encryptionService.encryptPassword(
       updateAccountData.password,
     );
+
     await this.accountRepository.update(accountId, {
       domain: updateAccountData.domain,
       username: updateAccountData.username,
       password: encryptedPassword,
+    });
+
+    await this.accountVersionService.create({
+      domain: existedAccount.domain,
+      username: existedAccount.username,
+      password: existedAccount.password,
+      accountId,
+      actorId: user.id,
     });
 
     if (user.id !== existedAccount.owner.id) {
@@ -152,7 +186,6 @@ export class AccountService {
         entityType: EntityType.ACCOUNT,
         action: RoleAccess.UPDATE,
       });
-
       const notification = await this.notificationService.createNotification({
         receipient: existedAccount.owner.email,
         sender: user,
@@ -176,6 +209,23 @@ export class AccountService {
     if (!existedAccount) throw new Error(ErrorCode.ACCOUNT_NOT_FOUND);
 
     await this.accountRepository.softRemove(existedAccount);
+  }
+
+  async rollbackToVersion(ownerId: string, versionId: string) {
+    const accountVersion = await this.accountVersionService.findOne(
+      versionId,
+      ownerId,
+    );
+    if (!accountVersion) {
+      throw new Error(ErrorCode.ACCOUNT_VERSION_NOT_FOUND);
+    }
+    await this.accountRepository.update(accountVersion.account.id, {
+      domain: accountVersion.domain,
+      username: accountVersion.username,
+      password: accountVersion.password,
+    });
+
+    await this.accountVersionService.remove(versionId, ownerId);
   }
 
   async restore(accountId: string) {
