@@ -1,9 +1,7 @@
+import { faker } from '@faker-js/faker';
 import { AppDataSource } from 'typeorm.config';
 
-import { faker } from '@faker-js/faker';
-
 import { Role } from '@/common/enums';
-
 import { User } from '@/modules/user/entities/user.entity';
 
 export async function seedUsers() {
@@ -14,10 +12,11 @@ export async function seedUsers() {
   const startYear = new Date().getFullYear() - 5;
   const endYear = new Date().getFullYear();
 
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 7000; i++) {
     const user = new User();
+
     user.name = faker.person.fullName();
-    user.email = faker.internet.email();
+    user.email = i + faker.internet.email();
     user.password = faker.internet.password();
     user.phoneNumber = faker.phone.number();
     user.avatar = faker.image.url();
