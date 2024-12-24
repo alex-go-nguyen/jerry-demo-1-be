@@ -1,24 +1,22 @@
-import Redis from 'ioredis';
 import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { TABLES } from '@/utils/constants';
 import { ErrorCode, Role, StatusTwoFa } from '@/common/enums';
+import { RedisCacheService } from '@/cache/redis-cache.service';
 
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dtos/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  private redisClient: Redis;
-
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {
-    this.redisClient = new Redis();
-  }
+
+    private readonly redisCacheService: RedisCacheService,
+  ) {}
   async getUsers(page: number, limit: number) {
     const skip = (page - 1) * limit;
     const data = await this.userRepository
@@ -95,7 +93,7 @@ export class UsersService {
 
     const isSkippedTwoFa =
       status === StatusTwoFa.NOT_REGISTERED
-        ? await this.redisClient.get(`isSkippedTwoFa-${id}`)
+        ? await this.redisCacheService.getSkipTwoFa(id)
         : false;
 
     return {
@@ -141,11 +139,6 @@ export class UsersService {
   }
 
   async skipTwoFa(userId: string) {
-    const EXPIRED_SKIP_TIME = 1800;
-    return await this.redisClient.setex(
-      `isSkippedTwoFa-${userId}`,
-      EXPIRED_SKIP_TIME,
-      'true',
-    );
+    await this.redisCacheService.saveSkipTwoFa(userId);
   }
 }
