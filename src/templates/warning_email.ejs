@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cảnh Báo Đăng Nhập Mới</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        color: #333;
+      }
+      .email-container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .email-header {
+        text-align: center;
+        background-color: #f6b93b;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .email-header h1 {
+        margin: 0;
+        font-size: 24px;
+        color: #ffffff;
+      }
+      .email-body {
+        margin-top: 20px;
+      }
+      .email-body p {
+        font-size: 16px;
+        line-height: 1.5;
+      }
+      .email-body ul {
+        padding-left: 20px;
+      }
+      .email-body ul li {
+        margin-bottom: 10px;
+        font-size: 16px;
+      }
+      .footer {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 12px;
+        color: #888;
+      }
+      .footer a {
+        color: #f6b93b;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="email-header">
+        <h1>Cảnh Báo Đăng Nhập Mới</h1>
+      </div>
+
+      <div class="email-body">
+        <p>Chào bạn <%= fullName %>,</p>
+        <p>
+          Chúng tôi muốn thông báo về việc một đăng nhập mới đã được thực hiện
+          trên tài khoản của bạn từ một thiết bị không nhận diện trước đây.
+        </p>
+
+        <h3>Thông tin đăng nhập:</h3>
+        <ul>
+          <li><strong>Ngày giờ đăng nhập: </strong><%= loginTime %></li>
+          <li><strong>Thiết bị: </strong><%= userAgent %></li>
+          <li><strong>Địa chỉ IP: </strong><%= ipAddress %> </li>
+        </ul>
+        <h3>Nếu là bạn, vui lòng bỏ qua email này!</h3>
+        <p>Để bảo vệ tài khoản của bạn, vui lòng làm theo các bước dưới đây:</p>
+        <ul>
+          <li><strong>Thay đổi mật khẩu ngay lập tức.</strong></li>
+          <li>
+            <strong
+              >Kiểm tra lịch sử đăng nhập của bạn trong phần Cài đặt tài
+              khoản.</strong
+            >
+          </li>
+          <li>
+            <strong
+              >Liên hệ với chúng tôi nếu bạn phát hiện hoạt động đáng
+              ngờ.</strong
+            >
+          </li>
+        </ul>
+
+        <p>
+          Chúng tôi luôn bảo vệ tài khoản của bạn với mức độ bảo mật cao nhất!
+        </p>
+      </div>
+
+      <div class="footer">
+        <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi.</p>
+        <p>
+          <a href="#">Truy cập vào tài khoản của bạn</a> để kiểm tra thêm thông
+          tin.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
