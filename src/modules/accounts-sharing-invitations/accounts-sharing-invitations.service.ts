@@ -4,10 +4,19 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
 
+import {
+  ActivityType,
+  EntityType,
+  ErrorCode,
+  RoleAccess,
+  StatusInvitation,
+} from '@/common/enums';
 import { envKeys } from '@/utils/constants';
 import { User } from '@/modules/user/entities/user.entity';
-import { ErrorCode, StatusInvitation } from '@/common/enums';
 import { Account } from '@/modules/account/entities/account.entity';
+import { NotificationService } from '@/modules/notification/notification.service';
+import { NotificationGateway } from '@/modules/notification/notification.gateway';
+import { MemberActivityLogService } from '@/modules/member-activity-log/member-activity-log.service';
 import { AccountsSharingMembersService } from '@/modules/accounts-sharing-members/accounts-sharing-members.service';
 
 import {
@@ -29,12 +38,20 @@ export class AccountsSharingInvitationsService {
     private accountRepository: Repository<Account>,
 
     private readonly accountsSharingMembersService: AccountsSharingMembersService,
+
+    private readonly notificationService: NotificationService,
+
+    private readonly notificationGateway: NotificationGateway,
+
+    private readonly memberActivityLogService: MemberActivityLogService,
+
     private readonly configService: ConfigService,
+
     private readonly mailerService: MailerService,
   ) {}
 
   async create(
-    ownerId: string,
+    user: User,
     accountsSharingInvitationsData: CreateAccountsSharingInvitationsDto,
   ) {
     const existedAccount = await this.accountRepository.findOne({
@@ -51,7 +68,6 @@ export class AccountsSharingInvitationsService {
     if (!sharingMembers || sharingMembers.length === 0) {
       throw new Error(ErrorCode.NO_SHARING_MEMBERS_PROVIDED);
     }
-
     const filteredSharingMembers: CreateAccountsSharingInvitationsDto['sharingMembers'] =
       [];
     const membersToUpdate = [];
@@ -85,10 +101,9 @@ export class AccountsSharingInvitationsService {
     if (filteredSharingMembers.length === 0) {
       return;
     }
-
     const invitations = filteredSharingMembers.map((member) => {
       return this.accountsSharingInvitationsRepository.create({
-        owner: { id: ownerId },
+        owner: user,
         account: existedAccount,
         email: member.email,
         roleAccess: member.roleAccess,
@@ -99,10 +114,22 @@ export class AccountsSharingInvitationsService {
       await this.accountsSharingInvitationsRepository.save(invitations);
 
     await Promise.all(
-      invitationSaved.map((invitation) => {
-        const confirmationUrl = `${this.configService.get<string>(
+      invitationSaved.map(async (invitation) => {
+        let confirmationUrl = `${this.configService.get<string>(
           envKeys.WEB_CLIENT_URL,
         )}/confirm-account-invitation/${invitation.id}`;
+
+        const notification = await this.notificationService.createNotification({
+          receipient: invitation.email,
+          sender: user,
+          activityType: ActivityType.SHARE_AN_ACCOUNT,
+          accountInvitationId: invitation.id,
+        });
+
+        if (notification) {
+          this.notificationGateway.sendNotification(notification);
+          confirmationUrl += `?notificationId=${notification.id}`;
+        }
 
         return this.mailerService.sendMail({
           to: invitation.email,
@@ -112,13 +139,31 @@ export class AccountsSharingInvitationsService {
           context: {
             type: 'Account',
             itemName: existedAccount.username,
-            ownerName: existedAccount.owner?.name || 'Owner',
+            ownerName: user.name || 'Owner',
             url: confirmationUrl,
           },
         });
       }),
     );
+
+    if (user.id !== existedAccount.owner.id) {
+      const activityLog = await this.memberActivityLogService.create({
+        accountId: existedAccount.id,
+        entityType: EntityType.ACCOUNT,
+        action: RoleAccess.MANAGE,
+      });
+
+      const notification = await this.notificationService.createNotification({
+        receipient: existedAccount.owner.email,
+        sender: user,
+        activityType: ActivityType.MEMBER_SHARE_AN_ACCOUNT,
+        activityLogId: activityLog.id,
+      });
+
+      this.notificationGateway.sendNotification(notification);
+    }
   }
+
   async confirmInvitation(
     confirmSharingWorkspaceData: ConfirmSharingAccounntDto,
   ) {
@@ -150,5 +195,51 @@ export class AccountsSharingInvitationsService {
       member: user,
       roleAccess: invitation.roleAccess,
     });
+  }
+
+  async declineInvitation(inviteId: string) {
+    const invitation = await this.accountsSharingInvitationsRepository.findOne({
+      where: { id: inviteId },
+      relations: ['account', 'owner'],
+    });
+
+    if (!invitation) {
+      throw new Error(ErrorCode.INVITATION_NOT_FOUND);
+    }
+
+    if (invitation.status !== StatusInvitation.PENDING) {
+      throw new Error(ErrorCode.INVALID_LINK_CONFIRM_INVITATION);
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { email: invitation.email },
+    });
+
+    if (!user) {
+      throw new Error(ErrorCode.USER_NOT_FOUND);
+    }
+
+    invitation.status = StatusInvitation.DECLINE;
+    await this.accountsSharingInvitationsRepository.save(invitation);
+  }
+
+  async getPendingIvitation(userEmail: string) {
+    const pendingInvitations = this.accountsSharingInvitationsRepository.find({
+      where: { email: userEmail, status: StatusInvitation.PENDING },
+      relations: ['owner', 'account'],
+      select: {
+        owner: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+        },
+        account: {
+          username: true,
+        },
+      },
+    });
+
+    return pendingInvitations;
   }
 }

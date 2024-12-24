@@ -19,7 +19,7 @@ export class AccountsSharingInvitations {
   @ManyToOne(() => User)
   owner: User;
 
-  @ManyToOne(() => Account)
+  @ManyToOne(() => Account, { onDelete: 'CASCADE' })
   account: Account;
 
   @Column()

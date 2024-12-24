@@ -102,7 +102,7 @@ export class AccountController {
   ) {
     try {
       await this.accountService.updateAccount(
-        user.id,
+        user,
         accountId,
         updateAccountData,
       );

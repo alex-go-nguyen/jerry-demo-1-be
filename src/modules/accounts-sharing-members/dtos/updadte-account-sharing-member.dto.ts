@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString } from 'class-validator';
 
 import { RoleAccess } from '@/common/enums';
 
@@ -14,7 +14,7 @@ export class UpdateAccountSharingMemberDto {
   @ApiProperty()
   ownerId: string;
 
-  @IsString({ message: 'sharingMembers must be a array' })
+  @IsArray({ message: 'sharingMembers must be array' })
   @IsNotEmpty({ message: 'sharingMembers is required' })
   @ApiProperty()
   sharingMembers: {

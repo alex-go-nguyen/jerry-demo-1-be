@@ -1,9 +1,18 @@
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { ErrorCode } from '@/common/enums';
+import {
+  ActivityType,
+  EntityType,
+  ErrorCode,
+  RoleAccess,
+} from '@/common/enums';
 import { Injectable } from '@nestjs/common';
+import { User } from '@/modules/user/entities/user.entity';
 import { EncryptionService } from '@/encryption/encryption.service';
+import { NotificationService } from '@/modules/notification/notification.service';
+import { NotificationGateway } from '@/modules/notification/notification.gateway';
+import { MemberActivityLogService } from '@/modules/member-activity-log/member-activity-log.service';
 
 import { Account } from './entities/account.entity';
 import { CreateAccountDto, UpdateAccountDto } from './dto';
@@ -12,12 +21,20 @@ export type CheckOwnerParams = {
   ownerId: string;
   accountId: string;
 };
+
 @Injectable()
 export class AccountService {
   constructor(
     @InjectRepository(Account)
     private readonly accountRepository: Repository<Account>,
+
     private readonly encryptionService: EncryptionService,
+
+    private readonly memberActivityLogService: MemberActivityLogService,
+
+    private readonly notificationService: NotificationService,
+
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async createAccountService(user, createAccountData: CreateAccountDto) {
@@ -103,7 +120,7 @@ export class AccountService {
   }
 
   async updateAccount(
-    userId: string,
+    user: User,
     accountId: string,
     updateAccountData: UpdateAccountDto,
   ) {
@@ -112,8 +129,8 @@ export class AccountService {
         {
           id: accountId,
         },
-        { owner: { id: userId } },
-        { members: { member: { id: userId } } },
+        { owner: { id: user.id } },
+        { members: { member: { id: user.id } } },
       ],
       relations: ['owner', 'members'],
     });
@@ -123,13 +140,30 @@ export class AccountService {
     const encryptedPassword = this.encryptionService.encryptPassword(
       updateAccountData.password,
     );
-
-    return await this.accountRepository.update(accountId, {
+    await this.accountRepository.update(accountId, {
       domain: updateAccountData.domain,
       username: updateAccountData.username,
       password: encryptedPassword,
     });
+
+    if (user.id !== existedAccount.owner.id) {
+      const activityLog = await this.memberActivityLogService.create({
+        accountId: existedAccount.id,
+        entityType: EntityType.ACCOUNT,
+        action: RoleAccess.UPDATE,
+      });
+
+      const notification = await this.notificationService.createNotification({
+        receipient: existedAccount.owner.email,
+        sender: user,
+        activityType: ActivityType.UPDATE_AN_ACCOUNT,
+        activityLogId: activityLog.id,
+      });
+
+      this.notificationGateway.sendNotification(notification);
+    }
   }
+
   async softRemove(userId: string, accountId: string) {
     const existedAccount = await this.accountRepository.findOne({
       where: { id: accountId, owner: { id: userId } },

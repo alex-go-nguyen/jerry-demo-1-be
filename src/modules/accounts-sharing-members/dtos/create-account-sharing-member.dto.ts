@@ -14,7 +14,7 @@ export class CreateAccountSharingMemberDto {
   @ApiProperty()
   member: User;
 
-  @IsString({ message: 'roleAccess must be a array' })
+  @IsString({ message: 'roleAccess must be a string' })
   @IsNotEmpty({ message: 'roleAccess is required' })
   @ApiProperty()
   roleAccess: RoleAccess;
