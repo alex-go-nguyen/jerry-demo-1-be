@@ -25,7 +25,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 
 import {
   ILoginResult,
@@ -44,12 +44,12 @@ import { handleDataResponse } from '@/utils';
 import { ErrorCode, Role } from '@/common/enums';
 import { AuthService } from '@/modules/auth/auth.service';
 import { User } from '@/modules/user/entities/user.entity';
+import { RedisCacheService } from '@/cache/redis-cache.service';
 
 import { AuthGuard } from './auth.guard';
-import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
+import { RolesGuard } from './roles.guard';
 import { VerifyOtpDto, VerifyTotpDto } from './dtos';
-import { RedisCacheService } from '@/cache/redis-cache.service';
 
 @ApiTags('Auth')
 @Controller('auth')

@@ -11,10 +11,11 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import { Fingerprint, IFingerprint } from 'nestjs-fingerprint';
 
-import { Role } from '@/common/enums';
+import { ErrorCode, Role } from '@/common/enums';
 import { CurrentUser } from '@/decorators';
 import { handleDataResponse } from '@/utils';
 import { AuthGuard } from '@/modules/auth/auth.guard';
@@ -42,7 +43,7 @@ export class LoginHistoryController {
   ) {
     try {
       if (!user) {
-        throw new UnauthorizedException('User not found');
+        throw new UnauthorizedException(ErrorCode.USER_NOT_FOUND);
       }
       const createLoginHistoryPayload = {
         ipAddress,
@@ -63,7 +64,7 @@ export class LoginHistoryController {
   async getLoginHistory(@CurrentUser() user: User, @Query() query) {
     try {
       if (!user) {
-        throw new UnauthorizedException('User not found');
+        throw new UnauthorizedException(ErrorCode.USER_NOT_FOUND);
       }
       return this.loginHistoryService.findAll(user, query);
     } catch (error) {

@@ -33,7 +33,7 @@ export class RedisCacheService {
   }
 
   async saveSecretTwoFa(userId: string, secret: string) {
-    return this.redisClient.setex(`secret:${userId}`, secret, 300);
+    return this.redisClient.setex(`secret:${userId}`, 300, secret);
   }
 
   async getSecretTwoFa(userId: string) {
