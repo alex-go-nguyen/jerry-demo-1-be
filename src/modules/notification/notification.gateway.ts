@@ -19,13 +19,7 @@ export class NotificationGateway
   private server: Server;
 
   constructor(private readonly redisCacheService: RedisCacheService) {
-    this.initializeMaxListeners();
-  }
-
-  private initializeMaxListeners() {
-    if (this.server) {
-      this.server.setMaxListeners(20);
-    }
+    this.server?.setMaxListeners(20);
   }
 
   @SubscribeMessage('register')
@@ -38,7 +32,7 @@ export class NotificationGateway
   }
 
   @SubscribeMessage('disconnect')
-  async disconnectSocket(socket: Socket, data: any) {
+  async disconnectSocket(data: any) {
     const { email } = data;
     if (email) {
       await this.redisCacheService.removeSocketConnection(email);
@@ -46,11 +40,20 @@ export class NotificationGateway
   }
 
   async handleConnection(socket: Socket) {
+    socket.setMaxListeners(100);
     const email = socket.handshake.query.email as string;
+
     if (email) {
       await this.redisCacheService.saveSocketConnection(email, socket.id);
     }
-    socket.removeAllListeners();
+
+    socket.removeAllListeners('disconnect');
+
+    socket.on('disconnect', async () => {
+      if (email) {
+        await this.redisCacheService.removeSocketConnection(email);
+      }
+    });
   }
 
   async handleDisconnect(socket: Socket) {
@@ -58,6 +61,7 @@ export class NotificationGateway
     if (email) {
       await this.redisCacheService.removeSocketConnection(email);
     }
+    socket.removeAllListeners();
   }
 
   async sendNotification(notification: any): Promise<void> {
