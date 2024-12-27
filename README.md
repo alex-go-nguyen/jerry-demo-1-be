@@ -6,6 +6,8 @@ Welcome to **My Back End GoPass**! This is a NestJS application designed to hand
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Directory Structure](#directory-structure)
+- [Architecture Diagram](#architecture-diagram)
 - [Settings](#settings)
 - [Running the Project](#running-the-project)
 - [Deployment](#deployment)
@@ -15,8 +17,9 @@ Welcome to **My Back End GoPass**! This is a NestJS application designed to hand
 Make sure you have the following installed on your machine:
 
 - [Node.js](https://nodejs.org/) (v16 or higher)
-- [npm](https://www.npmjs.com/) (comes with Node.js) or [Yarn](https://classic.yarnpkg.com/)
-- [git](https://git-scm.com/)
+- [Npm](https://www.npmjs.com/) (comes with Node.js) or [Yarn](https://classic.yarnpkg.com/)
+- [Git](https://git-scm.com/)
+- [Redis](https://redis.io/)
 
 ## Installation
 
@@ -45,6 +48,8 @@ Make sure you have the following installed on your machine:
     ```bash
     npm install
     ```
+## Directory Structure
+![image](https://github.com/user-attachments/assets/d2840d66-3870-4887-b3a8-999be60a7b09)
 
 ## Settings
 
@@ -71,9 +76,16 @@ COOKIE_EXPIRE_TIME =
 ACCESS_TOKEN_EXPIRATION=   
 REFRESH_TOKEN_EXPIRATION=
 RATE_LIMIT = 
-TIME_TO_LIVE = 
+TIME_TO_LIVE =
+CAPTCHA_API_KEY =
 
+REDIS_HOST=
+REDIS_PORT=
+
+BASIC_AUTH_PASSWORD=
 ```
+## Architecture Diagram
+![GoPass Architecture Diagram](https://github.com/user-attachments/assets/c6846892-310f-42a3-beb1-d58ddd7fb513)
 
 ## Running the Project
 
