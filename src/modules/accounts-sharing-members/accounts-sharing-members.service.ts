@@ -2,8 +2,6 @@ import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { ErrorCode } from '@/common/enums';
-
 import { UpdateAccountSharingMemberDto } from './dtos';
 import { AccountsSharingMembers } from './entities/accounts-sharing-members.entity';
 import { CreateAccountSharingMemberDto } from './dtos/create-account-sharing-member.dto';
@@ -55,23 +53,15 @@ export class AccountsSharingMembersService {
     }
 
     const updateMemberPromises = sharingMembers.map((sharingMember) =>
-      this.accountsSharingMembersRepository
-        .update(
-          {
-            account: { id: accountId },
-            member: { id: sharingMember.id },
-          },
-          {
-            roleAccess: sharingMember.roleAccess,
-          },
-        )
-        .then((result) => {
-          if (result.affected === 0) {
-            throw new Error(
-              `${ErrorCode.MEMBER_NOT_FOUND}: Member ID ${sharingMember.id} not found in account ${accountId}`,
-            );
-          }
-        }),
+      this.accountsSharingMembersRepository.update(
+        {
+          account: { id: accountId },
+          member: { id: sharingMember.id },
+        },
+        {
+          roleAccess: sharingMember.roleAccess,
+        },
+      ),
     );
     await Promise.all(updateMemberPromises);
   }

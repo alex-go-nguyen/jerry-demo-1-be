@@ -98,23 +98,15 @@ export class WorkspacesSharingMembersService {
     }
     if (sharingMembers.length > 0) {
       const updateMemberPromises = sharingMembers.map((sharingMember) =>
-        this.workspacesSharingMembersRepository
-          .update(
-            {
-              workspaceId,
-              member: { id: sharingMember.id },
-            },
-            {
-              roleAccess: sharingMember.roleAccess,
-            },
-          )
-          .then((result) => {
-            if (result.affected === 0) {
-              throw new Error(
-                `${ErrorCode.MEMBER_NOT_FOUND}: Member ID ${sharingMember.id} not found in workspace ${workspaceId}`,
-              );
-            }
-          }),
+        this.workspacesSharingMembersRepository.update(
+          {
+            workspaceId,
+            member: { id: sharingMember.id },
+          },
+          {
+            roleAccess: sharingMember.roleAccess,
+          },
+        ),
       );
       await Promise.all(updateMemberPromises);
 
