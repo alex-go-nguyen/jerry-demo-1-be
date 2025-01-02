@@ -11,10 +11,11 @@ import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { SubscriptionPlan } from '@/modules/subscriptions/entities/subscription-plan.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserTwoFa]),
+    TypeOrmModule.forFeature([User, UserTwoFa, SubscriptionPlan]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

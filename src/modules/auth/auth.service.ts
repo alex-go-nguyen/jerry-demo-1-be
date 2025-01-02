@@ -18,11 +18,17 @@ import { envKeys } from '@/utils/constants';
 import { User } from '@/modules/user/entities/user.entity';
 import { RedisCacheService } from '@/cache/redis-cache.service';
 import { ILoginResult, ILoginResultWithTokens } from '@/interfaces';
-import { ErrorCode, StatusEnableTwoFa, StatusTwoFa } from '@/common/enums';
+import {
+  ErrorCode,
+  StatusEnableTwoFa,
+  StatusTwoFa,
+  SubscriptionPlanNames,
+} from '@/common/enums';
 import { UserTwoFaService } from '@/modules/user-twofa/user-twofa.service';
 import { UserTwoFa } from '@/modules/user-twofa/entities/user-two-fa.entity';
 
 import { VerifyOtpDto, VerifyTotpDto } from './dtos';
+import { SubscriptionPlan } from '@/modules/subscriptions/entities/subscription-plan.entity';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +38,9 @@ export class AuthService {
 
     @InjectRepository(UserTwoFa)
     private readonly userTwoFaRepository: Repository<UserTwoFa>,
+
+    @InjectRepository(SubscriptionPlan)
+    private readonly subscriptionPlanRepository: Repository<SubscriptionPlan>,
 
     private readonly userTwoFaService: UserTwoFaService,
 
@@ -55,10 +64,19 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
+    let freePlan: SubscriptionPlan;
+
+    try {
+      freePlan = await this.subscriptionPlanRepository.findOne({
+        where: { name: SubscriptionPlanNames.FREE },
+      });
+    } catch (error) {}
+
     const newUser = this.userRepository.create({
       name: userData.name,
       email: userData.email,
       password: hashedPassword,
+      subscription: freePlan,
     });
 
     const saveUser = await this.userRepository.save(newUser);

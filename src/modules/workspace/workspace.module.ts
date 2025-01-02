@@ -21,6 +21,7 @@ import { WorkspacesSharingMembers } from '@/modules/workspaces-sharing-members/e
 import { WorkspaceService } from './workspace.service';
 import { Workspace } from './entities/workspace.entity';
 import { WorkspaceController } from './workspace.controller';
+import { SubscriptionPlan } from '@/modules/subscriptions/entities/subscription-plan.entity';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { WorkspaceController } from './workspace.controller';
       Notification,
       NotificationDetail,
       MemberActivityLog,
+      SubscriptionPlan,
     ]),
     AuthModule,
     CaslModule,

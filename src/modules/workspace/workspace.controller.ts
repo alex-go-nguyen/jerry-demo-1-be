@@ -22,11 +22,15 @@ import {
 
 import { handleDataResponse } from '@/utils';
 import { Role, RoleAccess } from '@/common/enums';
-import { PoliciesWorkspaceGuard } from '@/guards';
+import { PoliciesWorkspaceGuard, SubscriptionGuard } from '@/guards';
 import { AuthGuard } from '@/modules/auth/auth.guard';
 import { Roles } from '@/modules/auth/roles.decorator';
 import { RolesGuard } from '@/modules/auth/roles.guard';
-import { CheckPolicies, CurrentUser } from '@/decorators';
+import {
+  CheckPolicies,
+  CheckSubscriptionType,
+  CurrentUser,
+} from '@/decorators';
 import { User } from '@/modules/user/entities/user.entity';
 import { PaginationQueryDto } from '@/modules/account/dto/pagination-query.dto';
 
@@ -42,6 +46,8 @@ export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
 
   @Post('create')
+  @UseGuards(SubscriptionGuard)
+  @CheckSubscriptionType('workspaces')
   @Roles(Role.User)
   @ApiBadRequestResponse({ description: 'Missing input! or User not found' })
   @ApiCreatedResponse({

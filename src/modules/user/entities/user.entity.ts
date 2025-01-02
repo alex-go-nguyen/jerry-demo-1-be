@@ -7,6 +7,7 @@ import {
   OneToMany,
   DeleteDateColumn,
   OneToOne,
+  ManyToOne,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -19,6 +20,7 @@ import { LoginHistory } from '@/modules/login-history/entities/login-history.ent
 import { HighLevelPassword } from '@/modules/high-level-password/entities/high-level-password.entity';
 import { AccountsSharingMembers } from '@/modules/accounts-sharing-members/entities/accounts-sharing-members.entity';
 import { WorkspacesSharingMembers } from '@/modules/workspaces-sharing-members/entities/workspaces-sharing-members.entity';
+import { SubscriptionPlan } from '@/modules/subscriptions/entities/subscription-plan.entity';
 
 @Entity()
 export class User {
@@ -45,6 +47,10 @@ export class User {
   @ApiProperty()
   @Column({ nullable: true })
   avatar: string;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  subscriptionPaymentId: string;
 
   @ApiProperty()
   @Column({ default: false })
@@ -87,6 +93,15 @@ export class User {
 
   @OneToMany(() => WorkspacesSharingMembers, (member) => member.member)
   sharedWorkspaces: WorkspacesSharingMembers[];
+
+  @ManyToOne(
+    () => SubscriptionPlan,
+    (subscriptionPlan) => subscriptionPlan.users,
+  )
+  subscription: SubscriptionPlan;
+
+  @ManyToOne(() => SubscriptionPlan)
+  toUpgradeSubscription: SubscriptionPlan;
 
   @CreateDateColumn({ type: 'timestamptz' })
   @ApiProperty()

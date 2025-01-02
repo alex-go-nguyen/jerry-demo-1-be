@@ -22,6 +22,7 @@ export class UsersService {
     const data = await this.userRepository
       .createQueryBuilder(TABLES.user)
       .leftJoin('user.accounts', 'accounts')
+      .leftJoin('user.subscription', 'subscription')
       .select([
         'user.id AS id',
         'user.name AS name',
@@ -29,10 +30,11 @@ export class UsersService {
         'user.isAuthenticated AS isAuthenticated',
         'user.deletedAt AS deleted',
         'COUNT(DISTINCT accounts.id) AS accountsCount',
+        'subscription.name AS subscription',
       ])
       .where('user.role = :role', { role: Role.User })
       .withDeleted()
-      .groupBy('user.id')
+      .groupBy('user.id, subscription.name')
       .orderBy('user.createdAt', 'DESC')
       .offset(skip)
       .limit(limit)
@@ -78,7 +80,7 @@ export class UsersService {
   async findById(userId: string) {
     const existedUser = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['userTwoFa', 'highLevelPasswords'],
+      relations: ['userTwoFa', 'highLevelPasswords', 'subscription'],
     });
     const {
       id,
@@ -88,6 +90,7 @@ export class UsersService {
       avatar,
       phoneNumber,
       highLevelPasswords,
+      subscription,
       userTwoFa: { status },
     } = existedUser;
 
@@ -95,8 +98,7 @@ export class UsersService {
       status === StatusTwoFa.NOT_REGISTERED
         ? await this.redisCacheService.getSkipTwoFa(id)
         : false;
-
-    return {
+    const returnUser = {
       id,
       name,
       role,
@@ -109,8 +111,18 @@ export class UsersService {
         type: highLevelPassword.type,
         status: highLevelPassword.status,
       })),
+      subscriptionDetail: subscription ?? {
+        id: subscription?.id,
+        name: subscription?.name,
+        maxAccounts: subscription?.maxAccounts,
+        maxWorkspaces: subscription?.maxWorkspaces,
+        weights: subscription?.weights,
+      },
+      subscription: subscription?.name,
       isSkippedTwoFa,
     };
+
+    return returnUser;
   }
   async findByIdWithRelations(userId: string): Promise<User> {
     return this.userRepository.findOne({

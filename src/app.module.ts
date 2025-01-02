@@ -21,11 +21,13 @@ import { HighLevelPasswordModule } from '@/modules/high-level-password/high-leve
 import { MemberActivityLogModule } from '@/modules/member-activity-log/member-activity-log.module';
 import { NotificationDetailModule } from '@/modules/notification-detail/notification-detail.module';
 import { AccountsSharingMembersModule } from '@/modules/accounts-sharing-members/accounts-sharing-members.module';
-import { WorkspacesSharingMembersModule } from './modules/workspaces-sharing-members/workspaces-sharing-members.module';
+import { WorkspacesSharingMembersModule } from '@/modules/workspaces-sharing-members/workspaces-sharing-members.module';
 import { SharingWorkspaceModule } from '@/modules/workspaces-sharing-invitations/workspaces-sharing-invitations.module';
 import { AccountsSharingInvitationsModule } from '@/modules/accounts-sharing-invitations/accounts-sharing-invitations.module';
-import { AccountVersionModule } from './modules/account-version/account-version.module';
-import { CaptchaModule } from './modules/captcha/captcha.module';
+import { AccountVersionModule } from '@/modules/account-version/account-version.module';
+import { CaptchaModule } from '@/modules/captcha/captcha.module';
+import { StripeModule } from '@/modules/stripe/stripe.module';
+import { SubscriptionsModule } from '@/modules/subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -89,6 +91,8 @@ import { CaptchaModule } from './modules/captcha/captcha.module';
     MemberActivityLogModule,
     AccountVersionModule,
     CaptchaModule,
+    StripeModule,
+    SubscriptionsModule,
   ],
 
   providers: [
